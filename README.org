@@ -1,0 +1,78 @@
+* hackery to make calibre's viewer show (not make) annotations
+  
+** motivation
+
+   read epub on mobile device, that supports annotation, such as Kindle or Mantano.
+
+   You get the annotations from that program, but want to see them in context back on your Calibre machine.
+
+   Presumably you downloaded your annotations in some loose text-like form.
+
+   You can also create your own annotations by hand.
+
+** development
+
+   currently lauching the program this way:
+
+   #+begin_src sh :eval never
+     CALIBRE_DEVELOP_FROM=../calibre-src/src calibre-debug -w path-to.epub
+   #+end_src
+
+** 2013-02-19
+
+   succeeded in conjuring up the QWebInspector window from the document viewer, as well as execute arbitrary javascript
+
+   =waitok()= is a poor man's blocking function to check where we are... i =touch /tmp/okgo= to resume execution. this is because =raw_input()= started throwing exceptions once you get too deep into the Qt app's control (my guess). Thankfully didn't use this too much.
+
+=== modified file 'src/calibre/gui2/viewer/documentview.py'
+--- src/calibre/gui2/viewer/documentview.py	2013-02-18 07:24:55 +0000
++++ src/calibre/gui2/viewer/documentview.py	2013-02-20 03:17:49 +0000
+@@ -5,6 +5,16 @@
+ 
+ # Imports {{{
+ import os, math, json
++import time
++def waitok(msg = ""): # poor man's blocker
++    okgo_filepath = "/tmp/okgo"
++    mycount = 0
++    while not os.path.exists(okgo_filepath):
++        mycount += 1
++        print("waiting for okgo %s %s" % (msg, mycount))
++        time.sleep(1)
++    os.unlink(okgo_filepath)
++
+ from base64 import b64encode
+ from functools import partial
+ 
+@@ -13,6 +23,7 @@
+         QIcon, pyqtSignature, QAction, QMenu, QString, pyqtSignal,
+         QSwipeGesture, QApplication, pyqtSlot)
+ from PyQt4.QtWebKit import QWebPage, QWebView, QWebSettings, QWebElement
++from PyQt4.QtWebKit import QWebInspector
+ 
+ from calibre.gui2.viewer.flip import SlideFlip
+ from calibre.gui2.shortcuts import Shortcuts
+@@ -551,6 +562,10 @@
+         self.restore_fonts_action.setCheckable(True)
+         self.restore_fonts_action.triggered.connect(self.restore_font_size)
+ 
++        # self.settings().setAttribute(
++        #     QWebSettings.WebAttribute.DeveloperExtrasEnabled, True)
++        self.inspect = QWebInspector()
++
+     def goto_next_section(self, *args):
+         if self.manager is not None:
+             self.manager.goto_next_section()
+@@ -851,6 +866,11 @@
+             else:
+                 self.flipper(self.current_page_image(),
+                         duration=self.document.page_flip_duration)
++        print "EVALING JS"
++        js = "for(var lsp = document.getElementsByTagName('p'), i = 0; i < lsp.length; ++i) { lsp[i].innerHTML = '<span style=\"background-color: green;\">' + lsp[i].innerHTML + '</span>'; };"
++        self.page().mainFrame().evaluateJavaScript(js)
++        self.inspect.setPage(self.page())
++        self.inspect.show()
+ 
+     @classmethod
+     def test_line(cls, img, y):
+
