@@ -76,3 +76,77 @@
      @classmethod
      def test_line(cls, img, y):
 
+** 2013-02-22
+
+   Here is an example note entry that was loosely converted to orgmode:
+
+#+begin_example
+: ,* Title: Listing 8.1. An impl... (p.187)
+: 
+: Highlighted text
+: ......................................
+: Listing 8.1. An implementation of eval taking a local context
+: ......................................
+: 
+: [2012-11-29 12:03]
+: 
+: - - - - - - - - - - - - - - - - - - - - - - - - - -
+: 
+: 
+#+end_example
+
+   The page number is from Mantano, which is probably matched up with the reader, factoring its current viewing size (i.e. it changes all the time), and gets outputted as-is on export. IOW, aside of telling us about relative order, is mostly useless unless we figure out the page number mapping to ebook location in calibre's viewer. Not worth the time.
+
+   convert that to yaml:
+
+#+begin_example
+  - lookup: Listing 8.1. An impl... (p.187)
+    highlight: |
+      Listing 8.1. An implementation of eval taking a local context
+    time: 2012-11-29 12:03
+  
+#+end_example
+   
+   =pip install epub=
+
+   read it with this script to test:
+
+#+begin_src python :eval never
+  import yaml
+  import epub
+  import re
+  
+  book = epub.open_epub("test.epub")
+  
+  lsnote = yaml.load(open("note.yml"))
+  
+  mydc = dict((key, book.read_item(item)) for key, item in filter(lambda (k, i): k.startswith("html"), book.opf.manifest.items()))
+      
+  for key in sorted(mydc.keys(), lambda a, b: int(a[4:]) > int(b[4:]) and 1 or -1):
+      xml = mydc[key]
+      nidx = 0
+      while nidx < len(lsnote):
+          note = lsnote[nidx]
+          lookup = note['lookup'].split('...', 1)[0]
+          if lookup in re.sub('<[^>]*>', '', xml).replace('\n', ''):
+              print "FOUND", key
+              del lsnote[nidx]
+          else:
+              nidx += 1
+  
+#+end_src
+
+#+RESULTS:
+: FOUND html13
+: FOUND html22
+: FOUND html22
+: FOUND html22
+
+now we know we can locate the lookup (assuming all highlights are long enough).
+
+next is to coerce calibre's viewers to change its markup at the right places
+
+*** Manning epubs
+
+    it turns out the example book here, Fogus's /The Joy of Clojure/, as a bunch of calibre markup in it: looks like Manning is running a calibre converter in the backend?
+
