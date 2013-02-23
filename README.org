@@ -148,5 +148,67 @@ next is to coerce calibre's viewers to change its markup at the right places
 
 *** Manning epubs
 
-    it turns out the example book here, Fogus's /The Joy of Clojure/, as a bunch of calibre markup in it: looks like Manning is running a calibre converter in the backend?
+    it turns out the example book here, Fogus's /The Joy of Clojure/, has a bunch of calibre markup in it: looks like Manning is running a calibre converter in the backend?
 
+** 2013-02-23
+
+*** adding manhole
+
+    following =CalibrePluginScaleATon= to inject a manhole
+
+    for emacs, change the telnet prompt regexp to make interaction easier:
+
+    #+begin_src emacs-lisp
+    ;; default: (defvar telnet-prompt-pattern "^[^#$%>\n]*[#$%>] *")
+    (setq telnet-prompt-pattern "^>>> *")
+    #+end_src
+
+*** jack into =DocumentView.load_finished=
+
+    we're looking for location information that corresponds to nth file
+    as obtained from the test.epub/note.yml matchup
+    
+    #+begin_example
+      >>> see(self)
+          .*                      hash()                  repr()
+          str()                   .DISABLED_BRUSH         .DrawChildren
+          .DrawWindowBackground   .IgnoreMask             .PaintDeviceMetric()
+          .PdmDepth               .PdmDpiX                .PdmDpiY
+          .PdmHeight              .PdmHeightMM            .PdmNumColors
+          ...
+          ...
+          ...
+          .windowRole()           .windowState()          .windowTitle()
+          .windowType()           .x()                    .x11Info()
+          .x11PictureHandle()     .y()                    .zoomFactor()
+      >>> self.page.__doc__
+      'QWebView.page() -> QWebPage'
+      >>> print(mypage.mainFrame().toHtml()[:200])
+      <!--?xml version='1.0' encoding='utf-8'?--><html xmlns:mbp="Kindle" xmlns="http://www.w3.org/1999/xhtml"><head>
+          <title>The Joy of Clojure: Thinking the Clojure Way</title>
+          <meta content="http:
+      
+    #+end_example
+
+*** =src/calibre/gui2/viewer/main.py=
+
+    this is where the =EbookViewer= class and the =DocumentView='s =manager= is defined
+
+*** calibre's epub caching + rendering
+
+    so calibre's ebook viewer uses a calibre library (I think) that writes html files to a temp directory
+
+    where each html corresponds to a major section, which calibre paginates in smaller pieces while reading. When a file boundary is crossed (probably always the case in changing chapters), the corresponding file is loaded; crossing these boundaries calls =EbookViewer.next_document= and =EbookViewer.previous_document=, which calls =DocumentView.load_path=, which calls =calibre.ebooks.oeb.display.webview.load_html=
+
+*** matching up with =epub= manifest (not going to work?)
+
+    the total number of html files in that directory matches the total retrieved by the =epub= library,
+    but the labeling order doesn't match up: in this example, calibre's extraction looks like =kindle_split_012.html=
+    but the content corresponding to =epub='s =html12= key resides in a different file.
+
+    so to be quick and dirty we'll just build up a cache of all the notes, and search through the full text
+    of the currently viewed page
+
+*** calibre.ebooks.oeb.display.webview
+
+    
