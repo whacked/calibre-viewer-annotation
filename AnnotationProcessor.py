@@ -19,14 +19,12 @@ tagged = '''<span style="background-color: yellow;">%s</span>'''
 note = yaml.load(open("note.yml"))
 
 def process_html(note, html_orig):
-    html = cleanstring(html_orig)
-
     # preprocess html since we don't care about whitespace
+    html = cleanstring(html_orig)
 
     lsmatchidx = []
 
     nextbeg, stop = 0, len(html)
-    lastend = 0
     while nextbeg < stop:
         match = p_tag.search(html, nextbeg)
         if match is None: break
@@ -34,9 +32,9 @@ def process_html(note, html_orig):
         nextbeg = match.end()
 
     fulltext = ("".join([cleanstring(rec.txt) for rec in lsmatchidx])).replace('\n', ' ')
-
+    
     lsmatcher = [cleanstring(entry['highlight'].strip()) for entry in note]
-
+    
     for matcher in lsmatcher:
         idxmatchbeg = fulltext.find(matcher.replace('\n', ' '))
         if idxmatchbeg > -1:
