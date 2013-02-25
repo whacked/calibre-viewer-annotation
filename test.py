@@ -37,8 +37,6 @@ def process_html(note, html_orig):
 
     fulltext = ("".join([cleanstring(rec.txt) for rec in lsmatchidx])).replace('\n', ' ')
 
-    lsinsertion = []
-
     lsmatcher = [cleanstring(entry['highlight'].strip()) for entry in note]
 
     for matcher in lsmatcher:
@@ -79,7 +77,6 @@ def process_html(note, html_orig):
                     grabtxt = rec.txt[recoffsetbeg:recoffsetend]
                     rec.txt = rec.txt[:recoffsetbeg] + (tagged % grabtxt) + rec.txt[recoffsetend:]
                     # print irec, (tagged % (html[modbeg:modend]))
-                    lsinsertion.append((rec.beg + recoffsetbeg, rec.beg + recoffsetbeg + len(matcher)))
 
                     # hit a tag boundary, slurp the rest in next iter
                     if len(matcher) > reclen:
