@@ -94,6 +94,7 @@ def process_html(note, html_orig):
     lsout.append(html[lastend:])
     return "\n".join(lsout)
 
-with open("/tmp/testout.html", "w") as ofile:
-    ofile.write(process_html(note, html).encode('utf-8'))
+if __name__ == "__main__":
+    with open("/tmp/testout.html", "w") as ofile:
+        ofile.write(process_html(note, html).encode('utf-8'))
 
