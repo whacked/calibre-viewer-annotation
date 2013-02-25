@@ -183,7 +183,7 @@ next is to coerce calibre's viewers to change its markup at the right places
           .x11PictureHandle()     .y()                    .zoomFactor()
       >>> self.page.__doc__
       'QWebView.page() -> QWebPage'
-      >>> print(mypage.mainFrame().toHtml()[:200])
+      >>> print(self.page().mainFrame().toHtml()[:200])
       <!--?xml version='1.0' encoding='utf-8'?--><html xmlns:mbp="Kindle" xmlns="http://www.w3.org/1999/xhtml"><head>
           <title>The Joy of Clojure: Thinking the Clojure Way</title>
           <meta content="http:
