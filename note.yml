@@ -1,0 +1,19 @@
+- lookup: The radix notation s... (p.56)
+  highlight: |
+    The radix notation supports up to base 36
+  time: 2012-11-17 19:49
+- lookup: It should be noted t... (p.60)
+  highlight: |
+    It should be noted that the mk-set symbol is optional and doesn’t correspond to a globally accessible name for the function, but instead to a name internal
+    to the function itself used for self-calls. 
+  time: 2012-11-17 21:11
+- lookup: reader features are ... (p.62)
+  highlight: |
+    reader features are analogous to preprocessor directives in that they signify that some given form should be replaced with another at read
+    time. In the case of the #() form, it’s effectively replaced with the special form fn
+  time: 2012-11-18 00:06
+- lookup: Listing 8.1. An impl... (p.187)
+  highlight: |
+    Listing 8.1. An implementation of eval taking a local context
+  time: 2012-11-29 12:03
+
