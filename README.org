@@ -211,4 +211,6 @@ next is to coerce calibre's viewers to change its markup at the right places
 
 *** calibre.ebooks.oeb.display.webview
 
-    
+    =load_html= function is where the epub's html gets extracted and set
+
+
