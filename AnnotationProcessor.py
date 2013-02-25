@@ -18,8 +18,6 @@ tagged = '''<span style="background-color: yellow;">%s</span>'''
 
 note = yaml.load(open("note.yml"))
 
-html = open("/tmp/epubtest/kindle_split_011.html").read().decode('utf-8')
-
 def process_html(note, html_orig):
     html = cleanstring(html_orig)
 
@@ -95,6 +93,7 @@ def process_html(note, html_orig):
     return "\n".join(lsout)
 
 if __name__ == "__main__":
+    html = open("/tmp/epubtest/kindle_split_011.html").read().decode('utf-8')
     with open("/tmp/testout.html", "w") as ofile:
         ofile.write(process_html(note, html).encode('utf-8'))
 
