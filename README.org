@@ -214,3 +214,64 @@ next is to coerce calibre's viewers to change its markup at the right places
     =load_html= function is where the epub's html gets extracted and set
 
 
+** 2013-02-24
+
+   opting for a naive but a hack that works for at least 3 test notes on at least 1 test book:
+   
+   [[file:img/ss-001.png]]
+
+   The grunt work is in =AnnotationProcessor.py= and is untested hackery. Basically, after calibre's viewer (=calibre/gui2/viewer/documentview.py=) calls =load_html=, we grab that value and send it the Processor and re-set it. The processor:
+
+   1. removes all extra whitespace, perserving newlines (important because there are =<pre>= blocks), call this the =cleanstring=-ed html
+   2. we locate start and end indexes for non-tag elements
+   3. create a temporary "fulltext" from concatenating all non-tag elements
+   4. match this against the notes lookup (again, assume all are long enough and copy-pasted extractions) and locate indexes from matches
+   5. surround matched strings with highlight tags (=tagged= template)
+   6. using the non-tag start and end indexes, grab the tags by substring and reconstruct the html
+   7. re-run =self.setHTML= on the processed html
+      
+   So the important lines in =calibre/gui2/viewer/documentview.py= are:
+
+   #+begin_src python :eval never
+     # at top
+     import AnnotationProcessor
+     
+     # ...
+     # ...
+     # ...
+     
+     def load_path(self, path, pos=0.0):
+         self.initial_pos = pos
+         self.last_loaded_path = path
+     
+         def callback(lu):
+             self.loading_url = lu
+             if self.manager is not None:
+                 self.manager.load_started()
+     
+         load_html(path, self, codec=getattr(path, 'encoding', 'utf-8'), mime_type=getattr(path,
+             'mime_type', 'text/html'), pre_load_callback=callback,
+                   force_as_html=True)
+     
+         # intercept + hack in our highlights
+         myhtml = self.page().mainFrame().toHtml()
+         newhtml = AnnotationProcessor.process_html(AnnotationProcessor.note, str(myhtml).decode("utf-8"))
+         self.setHtml(newhtml, self.page().mainFrame().url())
+     
+         # the rest as usual
+         
+         entries = set()
+         for ie in getattr(path, 'index_entries', []):
+             if ie.start_anchor:
+                 entries.add(ie.start_anchor)
+             if ie.end_anchor:
+                 entries.add(ie.end_anchor)
+         self.document.index_anchors = entries
+     
+         # ...
+   #+end_src
+
+   =AnnotationProcessor.py= expects you have a =note.yml= file sitting in its path. Next steps are to make that more intelligent.
+
+   
+   
