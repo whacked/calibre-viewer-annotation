@@ -1,4 +1,7 @@
 from collections import namedtuple
+from glob import glob
+import os
+from os.path import join as pjoin
 import yaml
 import re
 
@@ -16,9 +19,23 @@ def cleanstring(s):
 
 tagged = '''<span style="background-color: yellow;">%s</span>'''
 
-note = yaml.load(open("note.yml"))
+dnotecache = {}
 
-def process_html(note, html_orig):
+NOTE_DIR = os.path.expanduser("~/note/org/book")
+
+def process_html(viewer, html_orig):
+    book_title = unicode(viewer.title())
+    if book_title not in dnotecache:
+        dnotecache[book_title] = {}
+        
+        note_yml_filename = book_title + ".yml"
+        note_yml_filepath = pjoin(NOTE_DIR, note_yml_filename)
+        find_yml_file = glob(note_yml_filepath)
+        if find_yml_file:
+            dnotecache[book_title] = yaml.load(open(note_yml_filepath))
+
+    dnote = dnotecache[book_title]
+
     # preprocess html since we don't care about whitespace
     html = cleanstring(html_orig)
 
@@ -33,7 +50,7 @@ def process_html(note, html_orig):
 
     fulltext = ("".join([cleanstring(rec.txt) for rec in lsmatchidx])).replace('\n', ' ')
     
-    lsmatcher = [cleanstring(entry['highlight'].strip()) for entry in note]
+    lsmatcher = [cleanstring(entry['highlight'].strip()) for entry in dnote]
     
     for matcher in lsmatcher:
         idxmatchbeg = fulltext.find(matcher.replace('\n', ' '))
