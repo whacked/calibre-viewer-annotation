@@ -5,6 +5,7 @@ from os.path import join as pjoin
 import yaml
 import re
 
+
 class Rec:
     def __init__(self, beg, end, txt):
         self.beg = beg
@@ -17,7 +18,19 @@ p_stripspace = re.compile(r'\s+')
 def cleanstring(s):
     return p_stripspace.sub(' ', s.replace('\n', '%%%NEWLINE%%%')).replace('%%%NEWLINE%%%', '\n').replace('\n ', '\n').replace(' \n', '\n')
 
-tagged = '''<span style="background-color: yellow;">%s</span>'''
+def make_tagged(**attr):
+    import uuid
+    myattr = attr.copy()
+    myattr['borderstr'] = 'note' in attr and "border: 2px dashed red;" or ""
+    myattr['uuid'] = str(uuid.uuid4())
+    span = '''<span style="background-color: %(background_color)s; %(borderstr)s" onmouseout="document.getElementById('%(uuid)s').style.display='none';" onmouseover="document.getElementById('%(uuid)s').style.display='';">%(innerhtml)s</span>''' % myattr
+    notebox = '''<div id="%s" style="font-family:Courier New, Mono; font-size: 12pt; position:absolute;width:50%%;border:2px solid gray;background-color:white;box-shadow: 0px 0px 10px black;display:none;">
+    %s
+    </div>''' % (myattr['uuid'], "<hr/>".join([
+        "%s" % (attr[k])
+        for k in ["lookup", "time", "highlight"]
+        ]))
+    return span + notebox
 
 dnotecache = {}
 
@@ -52,7 +65,7 @@ def process_html(viewer, html_orig):
     
     lsmatcher = [cleanstring(entry['highlight'].strip()) for entry in dnote]
     
-    for matcher in lsmatcher:
+    for matcher, entry in zip(lsmatcher, dnote):
         idxmatchbeg = fulltext.find(matcher.replace('\n', ' '))
         if idxmatchbeg > -1:
             # find the real offset
@@ -68,7 +81,11 @@ def process_html(viewer, html_orig):
                         # print "SECOND GO: >>>>>>>>>> ", grabtxt
                         # print "LEN", lenremain
                         # print "ORIG:", rec.txt
-                        rec.txt = tagged % (html[rec.beg:rec.beg+len(grabtxt)])
+                        rec.txt = make_tagged(
+                            background_color = entry.get('color', 'yellow'),
+                            innerhtml = html[rec.beg:rec.beg+len(grabtxt)],
+                            **entry
+                            )
                         # print rec.txt
                         lenremain -= len(grabtxt)
                     if lenremain is 0:
@@ -88,7 +105,11 @@ def process_html(viewer, html_orig):
                     # modend = modbeg + len(rec.txt[]) len(matcher)
                     # print "the rec txt >>>>>>>>>>>>>>>", rec.txt
                     grabtxt = rec.txt[recoffsetbeg:recoffsetend]
-                    rec.txt = rec.txt[:recoffsetbeg] + (tagged % grabtxt) + rec.txt[recoffsetend:]
+                    rec.txt = rec.txt[:recoffsetbeg] + (make_tagged(
+                         background_color = entry.get('color', 'yellow'),
+                         innerhtml = grabtxt,
+                         **entry
+                         )) + rec.txt[recoffsetend:]
                     # print irec, (tagged % (html[modbeg:modend]))
 
                     # hit a tag boundary, slurp the rest in next iter
