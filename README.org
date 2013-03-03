@@ -218,7 +218,7 @@ next is to coerce calibre's viewers to change its markup at the right places
 
    opting for a naive but a hack that works for at least 3 test notes on at least 1 test book:
    
-   [[./img/ss-001.png]]
+   [[./doc/img/ss-001.png]]
 
    The grunt work is in =AnnotationProcessor.py= and is untested hackery. Basically, after calibre's viewer (=calibre/gui2/viewer/documentview.py=) calls =load_html=, we grab that value and send it the Processor and re-set it. The processor:
 
