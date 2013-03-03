@@ -216,7 +216,7 @@ next is to coerce calibre's viewers to change its markup at the right places
 
 ** 2013-02-24
 
-   opting for a naive but a hack that works for at least 3 test notes on at least 1 test book:
+   opting for a naive hack that works for at least 3 test notes on at least 1 test book:
    
    [[./doc/img/ss-001.png]]
 
@@ -274,4 +274,17 @@ next is to coerce calibre's viewers to change its markup at the right places
    =AnnotationProcessor.py= expects you have a =note.yml= file sitting in its path. Next steps are to make that more intelligent.
 
    
+   
+** 2013-03-03
+
+   Add highlight color specification to =AnnotationProcessor= + slightly more intelligent note lookup.
+
+   You need to set the =NOTE_DIR= variable in =AnnotationProcessor.py=, where it looks for a =yml= file of the title of the book. Currently it's hard coded to
+   
+   =NOTE_DIR = os.path.expanduser("~/note/org/book")=
+   
+   [[./doc/img/ss-002.png]]
+
+   the new note box shows a popup with the highlighted original text... because the highlight doesn't always get the right text.
+
    
