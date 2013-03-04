@@ -10,8 +10,8 @@ STYLE_NOTEENTRY = u"padding-top: 10px;margin-left:20px;padding-bottom:20px;borde
 STYLE_NOTETEXT = u"border-left-color: #999;border-left-style: solid;border-left-width: 4px;padding-bottom: 2px;padding-left: 10px;padding-right: 5px;padding-top: 2px;"
 STYLE_LOOKUP = u"margin-top:10px;margin-top:0px;vertical-align: middle;padding-top:10px;padding-left: 40px;margin-bottom: 10px;border-bottom-color: #DDD;border-bottom-style: dotted;border-bottom-width: 1px;"
 STYLE_PAGENUM = u"float:right;text-align:right;margin-top: 12px;"
-STYLE_RE_HIGHLIGHT = re.compile(r"margin-bottom: 10px;padding-bottom: 2px;padding-left: 10px;padding-right: 5px;padding-top: 2px;background-color:#.+")
 
+STYLE_RE_HIGHLIGHT = re.compile(r"margin-bottom: 10px;padding-bottom: 2px;padding-left: 10px;padding-right: 5px;padding-top: 2px;")
 
 if __name__ == "__main__":
     html = open(sys.argv[-1]).read()
@@ -29,7 +29,15 @@ if __name__ == "__main__":
             find_highlight = noteentry.find(style = STYLE_RE_HIGHLIGHT)
             pagenum, datestr = find_pagenum.text.split(' - ', 1)
 
-            colorstr = find_highlight['style'].split('background-color:')[-1].strip(';')
+            # highlighted text
+            if "background-color" in find_highlight['style']:
+                colorstr = find_highlight['style'].split('background-color:')[-1].strip(';')
+            # underlined text
+            elif "text-decoration" in find_highlight['style']:
+                # FIXME: you'll need to add the text-decoration in make_tagged()
+                # this suits my needs for now
+                colorstr = "#CCCCCC"
+                
             # vocab
             if colorstr == "#d4ebc4;":
                 lsvocab.append(find_highlight.text)
@@ -50,3 +58,4 @@ if __name__ == "__main__":
 
     xerox.copy(yaml.safe_dump(lsout, default_flow_style = False))
     print lsvocab
+    print len(lsout)
