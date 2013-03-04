@@ -37,7 +37,22 @@ dnotecache = {}
 NOTE_DIR = os.path.expanduser("~/note/org/book")
 
 def process_html(viewer, html_orig):
-    book_title = unicode(viewer.title())
+    book_title = None
+    
+    # hackery: parse the content.opf that calibre (hopefully) generates to get the right title
+    tmp_opf_filepath = os.path.join(os.path.dirname(viewer.path()), "content.opf")
+    if os.path.exists(tmp_opf_filepath):
+        xml = open(tmp_opf_filepath).read()
+        flt_xml = [line for line in xml.split("\n") if "title>" in line]
+        if len(flt_xml) is 1:
+            book_title = p_tag.sub("", flt_xml[0]).strip()
+        print("BOOK TITLE from %s: %s" % (tmp_opf_filepath, book_title))
+
+    if book_title is None:
+        # not reliable method to get book title!
+        book_title = unicode(viewer.title())
+        print("BOOK TITLE from viewer: %s" % (book_title))
+    
     if book_title not in dnotecache:
         dnotecache[book_title] = {}
         
@@ -46,6 +61,8 @@ def process_html(viewer, html_orig):
         find_yml_file = glob(note_yml_filepath)
         if find_yml_file:
             dnotecache[book_title] = yaml.load(open(note_yml_filepath))
+            print("found yml: %s" % note_yml_filepath)
+        print("search yml: %s" % note_yml_filepath)
 
     dnote = dnotecache[book_title]
 
