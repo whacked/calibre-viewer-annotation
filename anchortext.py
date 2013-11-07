@@ -110,11 +110,13 @@ if __name__ == "__main__":
 
     try:
         from termcolor import colored
-        USE_TERMCOLOR = True
+        def run_apply_demo(anchor, text):
+            idx = apply_anchor(anchor, text)
+            print text[:idx] + colored(text[idx:idx+len(anchor.token)], "yellow", attrs=["bold"]) + text[idx+len(anchor.token):]
     except Exception, e:
-        USE_TERMCOLOR = False
-
-
+        def run_apply_demo(anchor, text):
+            idx = apply_anchor(anchor, text)
+            print apply_insertion(text, [(idx, "***"), (idx+len(anchor.token), "***")])
 
     document_text_list = [
             """
@@ -143,12 +145,8 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
         ra0, ra1 = make_anchor_range(highlighted_text, offset_begin, 2, document_text_list)
         idx0, idx1 = apply_anchor_range(ra0, ra1, testtxt)
         print testtxt[:idx0] + colored(testtxt[idx0:idx1], "yellow", attrs=["bold"]) + testtxt[idx1:]
-        idx = apply_anchor(anc, testtxt)
 
-        if USE_TERMCOLOR:
-            print testtxt[:idx] + colored(testtxt[idx:idx+len(anc.token)], "yellow", attrs=["bold"]) + testtxt[idx+len(anc.token):]
-        else:
-            print apply_insertion(testtxt, [(idx, "*"), (idx+len(anc.token), "*")])
+        run_apply_demo(anc, testtxt)
 
     if False:
         testtxt = """
@@ -159,10 +157,7 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
         anc.approximate_offset = 18
         idx = apply_anchor(anc, testtxt)
 
-        if USE_TERMCOLOR:
-            print testtxt[:idx] + colored(testtxt[idx:idx+len(anc.token)], "yellow", attrs=["bold"]) + testtxt[idx+len(anc.token):]
-        else:
-            print apply_insertion(testtxt, [(idx, "*"), (idx+len(anc.token), "*")])
+        run_apply_demo(anc, testtxt)
 
 
     ## test word scoring method
