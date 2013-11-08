@@ -63,6 +63,8 @@ def tokenize(s):
         else:
             rtn.append((lastidx, s[lastidx:beg]))
         lastidx = end
+    if lastidx < len(s):
+        rtn.append((lastidx, s[lastidx:]))
     return rtn
 
 def map_get_second(ls):
