@@ -5,6 +5,7 @@ import re
 from lxml import etree
 import math
 import random
+import operator
 
 from collections import Counter
 
@@ -48,8 +49,24 @@ def get_word_score(word):
     modword = re.sub(r'[^a-zA-Z]', '', word)
     return sum(map(dletterscore.get, modword.upper())) / len(modword) * math.log(len(word))
 
+
 def tokenize(s):
-    return re.split(r"[\W\s]", s)
+    """
+    returns: [(token:str, offset:int)]
+    """
+    lastidx = 0
+    rtn = []
+    for match in re.finditer(r"[\W\s]", s):
+        beg, end = match.start(), match.end()
+        if lastidx is 0 and beg == lastidx:
+            pass
+        else:
+            rtn.append((lastidx, s[lastidx:beg]))
+        lastidx = end
+    return rtn
+
+def map_get_second(ls):
+    return map(operator.itemgetter(1), ls)
 
 def tf(term, document):
     """term frequency
@@ -57,7 +74,7 @@ def tf(term, document):
     - `term`: the search token
     - `document`: a string that is just a bunch of text that should contain some number of instances of `term`
     """
-    return tokenize(document.lower()).count(term.lower())
+    return map_get_second(tokenize(document.lower())).count(term.lower())
 
 def idf(term, document_list):
     """inverse document frequency
@@ -82,7 +99,7 @@ class TFIDF:
         self.document_list = document_list
         self.ndoc = len(document_list)
         for i, document in enumerate(document_list):
-            self._dmemo[i] = Counter(tokenize(document.lower()))
+            self._dmemo[i] = Counter(map_get_second(tokenize(document.lower())))
 
     def tfidf(self, term, idx_document):
         term = term.lower()
@@ -100,10 +117,10 @@ class TFIDF:
         # indexes (for human readability if one somehow wants to scan through
         # the text for the matching anchor keyword), so save the first matching
         # token's index
-        for i, token in enumerate(tokenize(self.document_list[docidx])):
+        for idx, token in tokenize(self.document_list[docidx]):
             if token not in dcount:
                 dcount[token] = []
-            dcount[token].append(i)
+            dcount[token].append(idx)
 
         used = set()
         res = []
@@ -146,7 +163,7 @@ if __name__ == "__main__":
     docidx = docnum - 1
     if False:
         res = []
-        alltoken = set(tokenize(" ".join(ls_text[docidx:docidx+1])))
+        alltoken = set(map_get_second(tokenize(" ".join(ls_text[docidx:docidx+1]))))
         print "DOCNUM: ", docnum
         for i, token in enumerate(alltoken):
             sys.stdout.write("%04d / %04d\r" % (i, len(alltoken)))
@@ -158,7 +175,8 @@ if __name__ == "__main__":
 
         res = tfidfer.bestn(docidx)
 
+    mytext = ls_text[docidx]
     for score, firstidx, token in res:
-        print token, "\t", score, firstidx
+        print token, "\t", score, firstidx, mytext[firstidx:firstidx+len(token)]
 
 
