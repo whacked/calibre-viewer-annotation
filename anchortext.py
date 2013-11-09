@@ -22,13 +22,16 @@ class Anchor:
             rtn += "\n    supported by:\n        " + "\n        ".join(map(str, self.support_anchor_list))
         return rtn
 
-    def to_json(self):
+    def to_dict(self):
         return json.dumps(dict(
             token = self.token,
             aoffset = self.approximate_offset,
             roffset = self.relative_offset,
             support = [anc.to_json() for anc in self.support_anchor_list],
             ))
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
 
 class AnchorDoesNotExistException(Exception):
     pass
@@ -119,6 +122,10 @@ def make_anchor(desired_token, approximate_offset, current_document_index, base_
 
     tfidfer = TFIDF(base_document_list)
 
+    ## TODO
+    ## consider implementing weighting by distance, closer is better
+    ## though, as currently by tfidf, our support anchors should be
+    ## within the same "page" at least
     for score, firstidx, token in tfidfer.bestn(current_document_index, N = 20):
         if len(anc.support_anchor_list) > 5: break
         if token == desired_token: continue
