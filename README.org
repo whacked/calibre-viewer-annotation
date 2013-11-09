@@ -55,6 +55,23 @@
      requests), and call =UnQLite= through the modified
      =ebook-viewer=.
 
+** 2013-11-09
+
+*** BKKH 忘却回避
+
+    - sudo pip install 'ctypesgen>=0.0.dev0' ## without qualifier, it complains about no satisfactory version
+    - sudo pip install unqlitepy ## needs ctypesgen first
+
+*** TODO step 1: create simplified annotation interface using unqlitepy
+
+*** TODO step 2: investigate how storage works in annotator.js
+
+    to butcher or to plugin?
+
+*** TODO step 3: do away with HTTP through python bridge
+
+    basically reroute all the =app.route= parts to direct js->python calls
+
 * notes from old attack (until 2013-11-08)
 
   this basically documents some poking around.
