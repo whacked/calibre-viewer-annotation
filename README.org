@@ -1,18 +1,18 @@
-* hackery to make calibre's viewer show (not make) annotations
+* adding annotation (read and write) capability to calibre's ebook-viewer
   
-  sporadic work in progress
+  sporadic work in progress.
 
-** motivation
+  previously titled "hackery to make calibre's viewer show (not make)
+  annotations". other OSS developments make this much closer than the
+  earlier approach documented here. this is less of a README now than
+  it is notes on my progress.
 
-   read epub on mobile device, that supports annotation, such as Kindle or Mantano.
+  There are 2 main issues we care about here.
 
-   You get the annotations from that program, but want to see them in context back on your Calibre machine.
-
-   Presumably you downloaded your annotations in some loose text-like form.
-
-   You can also create your own annotations by hand.
-
-** development
+  1. importing, i.e. reading annotations made elsewhere
+  2. editing, i.e. displaying and editing annotations in calibre's =ebook-viewer= program
+  
+* development
 
    currently lauching the program this way:
 
@@ -55,14 +55,27 @@
      requests), and call =UnQLite= through the modified
      =ebook-viewer=.
 
-** 2013-11-09
+** 2013-11-10
 
 *** BKKH 忘却回避
 
-    - sudo pip install 'ctypesgen>=0.0.dev0' ## without qualifier, it complains about no satisfactory version
-    - sudo pip install unqlitepy ## needs ctypesgen first
+    using a test book, http://www.gutenberg.org/ebooks/76 with images.
+
+**** unqlitepy
+
+     see https://github.com/nobonobo/unqlitepy/blob/develop/unqlitepy/__init__.py
+
+     - sudo pip install 'ctypesgen>=0.0.dev0' ## without qualifier, it complains about no satisfactory version
+     - sudo pip install unqlitepy ## needs ctypesgen first
 
 *** TODO step 1: create simplified annotation interface using unqlitepy
+
+    - starting with https://github.com/okfn/annotator-store.
+      bypassing the ElasticStorage dep is a real headache.
+    - see https://github.com/nickstenning/annotator-store-flask/, it
+      is much faster to get started than by using the official
+      up-to-date version!!! this uses sqlite. maybe after all we are
+      better off with that.
 
 *** TODO step 2: investigate how storage works in annotator.js
 
