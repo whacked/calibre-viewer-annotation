@@ -85,13 +85,32 @@
      typing. if you press space / backspace the page jumps forward and
      backward
 
-*** TODO step 2: investigate how storage works in annotator.js
+*** DONE step 2: investigate how storage works in annotator.js
+    CLOSED: [2013-11-10 Sun 16:05]
 
     to butcher or to plugin?
 
-*** TODO step 3: do away with HTTP through python bridge
+    for R/W from the viewer, the easiest route seems like overriding
+    the =$.ajax= call with a call to =py_bridge=
+
+*** DONE step 3: do away with HTTP through python bridge
+    CLOSED: [2013-11-10 Sun 16:06]
 
     basically reroute all the =app.route= parts to direct js->python calls
+
+**** we have create, read, add, update working here:
+
+     [[./doc/img/ss-004.png]]
+
+     annotations are stored to the sqlite database managed by nick
+     stenning's flask annotator-store, without the flask dependency
+
+     the hotkey interference can be overcome by changing the
+     keybindings in the ebook viewer preferences.
+
+*** TODO update =uri= field to be unique to the book + informative about location
+
+    not sure what to do about this yet.
 
 * notes from old attack (until 2013-11-08)
 
