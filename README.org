@@ -77,6 +77,14 @@
       up-to-date version!!! this uses sqlite. maybe after all we are
       better off with that.
 
+**** here's where we are now:
+
+     [[./doc/img/ss-003.png]]
+
+     one problem is now the viewer's hotkeys are interfering with the
+     typing. if you press space / backspace the page jumps forward and
+     backward
+
 *** TODO step 2: investigate how storage works in annotator.js
 
     to butcher or to plugin?
