@@ -168,13 +168,7 @@
 *** current issues
 
      - the jump-to-location from clicking the entry is broken
-     - on re-opening the ebook, the highlights don't always end up in
-       the same place. what's happening is that the rendering function
-       is taking annotations meant for another section, and finding
-       the matching element and putting them there. in other words, if
-       you were currently in the right section, they would still
-       appear correctly, except in other sections, the highlights
-       would /also/ appear there, at the matching xpath.
+     - FIXED +on re-opening the ebook, the highlights don't always end up in the same place. what's happening is that the rendering function is taking annotations meant for another section, and finding the matching element and putting them there. in other words, if you were currently in the right section, they would still appear correctly, except in other sections, the highlights would /also/ appear there, at the matching xpath.+
      - the notes pane is loaded once on program start, so adding notes
        will not update it
        
