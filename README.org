@@ -108,9 +108,75 @@
      the hotkey interference can be overcome by changing the
      keybindings in the ebook viewer preferences.
 
+** 2013-11-11
+
 *** TODO update =uri= field to be unique to the book + informative about location
 
-    not sure what to do about this yet.
+    a hint about what we can do is in =main.py:load_ebook()=, where it initializes =self.toc_model=
+
+    also a hint of how the location is stored is in =toc_clicked()=.
+
+    the =item= object is a =TOCItem= defined in =toc.py=.
+
+    it holds a =fragment= attr that seems to correspond to an in-document anchor like =file:///...#fragment=
+
+    for our annotation anchoring we may want =toc.href= with =TOCItem.fragment=
+
+*** =spine= is a good candidate
+
+    =spine= is of type =calibre.ebooks.oeb.iterator.spine.SpineItem=
+    though it's basically a =unicode= derivative
+
+    appears to be a list of paths to files that are unpacked from the
+    epub, corresponding to the book sections in the epub. so we are
+    interested in using these, minus the tmp file part, to anchor the
+    notes.
+
+    for /huck finn/ an example =spine= looks like this:
+
+    ~/tmp/calibre_1.10.0_tmp_A8r6Yt/8PLU4E_ebook_iter/76/@public@vhost@g@gutenberg@html@files@76@76-h@76-h-12.htm.html~
+
+    looks like =/76/@public@vhost@g@gutenberg@html@files@76@76-h@76-h-12.htm.html= is a stable portion,
+
+    and the stuff before that changes on every load through =ebook-viewer=
+
+    no actually here we want the stuff following =@public=. we want
+    =metadata.TOC='s =href= and =fragment= for anchoring; then =text=
+    for the actual referenced note
+
+*** hacking in a notes view in the fashion of the TOC
+
+    essentially we want to copy =TOCView= and show notes in it
+
+    relevant code in =main_ui.py= and =toc.py=
+
+    we will start by subclassing class =TOC= which is the viewer model
+
+**** need a =base_path= from the =spine= argument
+
+     =spine= comes from =EbookIterator=; the random =base_path= is set
+     in =book.py= by =self._tdir = TemporaryDirectory('_ebook_iter')=,
+     though it doesn't seem to get set explicitly in the =spine=
+     object, so *HACK it back together by os.path.split* on =spine=
+
+*** current progress
+
+    the duplicate table of contents button opens the Notes pane
+
+     [[./doc/img/ss-005.png]]
+    
+*** current issues
+
+     - the jump-to-location from clicking the entry is broken
+     - on re-opening the ebook, the highlights don't always end up in
+       the same place. what's happening is that the rendering function
+       is taking annotations meant for another section, and finding
+       the matching element and putting them there. in other words, if
+       you were currently in the right section, they would still
+       appear correctly, except in other sections, the highlights
+       would /also/ appear there, at the matching xpath.
+       
+
 
 * notes from old attack (until 2013-11-08)
 
