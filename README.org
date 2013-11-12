@@ -175,9 +175,9 @@
        you were currently in the right section, they would still
        appear correctly, except in other sections, the highlights
        would /also/ appear there, at the matching xpath.
+     - the notes pane is loaded once on program start, so adding notes
+       will not update it
        
-
-
 * notes from old attack (until 2013-11-08)
 
   this basically documents some poking around.
