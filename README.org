@@ -167,11 +167,18 @@
     
 *** current issues
 
-     - the jump-to-location from clicking the entry is broken
      - FIXED +on re-opening the ebook, the highlights don't always end up in the same place. what's happening is that the rendering function is taking annotations meant for another section, and finding the matching element and putting them there. in other words, if you were currently in the right section, they would still appear correctly, except in other sections, the highlights would /also/ appear there, at the matching xpath.+
      - the notes pane is loaded once on program start, so adding notes
        will not update it
-       
+
+** 2013-11-12
+
+*** FIXED +the jump-to-location from clicking the entry is broken+
+
+    1. store ebook-viewer's position (by =documentview:bookmark=) as custom data in the annotation data. also need to add the =spine= information
+    2. when populating the notes pane, monkey patch the bookmark data into the TOCItem
+    3. on click, call =self.goto_bookmark= on that bookmark
+    
 * notes from old attack (until 2013-11-08)
 
   this basically documents some poking around.
