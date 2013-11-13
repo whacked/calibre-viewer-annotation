@@ -2,15 +2,15 @@
   
   sporadic work in progress.
 
-  previously titled "hackery to make calibre's viewer show (not make)
-  annotations". other OSS developments make this much closer than the
-  earlier approach documented here. this is less of a README now than
-  it is notes on my progress.
+  [[./doc/img/ss-006.png]]
+  
+  There are 2 main issues we care about here, addressed in headings below
 
-  There are 2 main issues we care about here.
-
-  1. importing, i.e. reading annotations made elsewhere
-  2. editing, i.e. displaying and editing annotations in calibre's =ebook-viewer= program
+  1. importing, i.e. reading annotations made elsewhere.
+  2. editing, i.e. displaying and editing annotations in calibre's
+     =ebook-viewer= program. this is doable now. read below for
+     details. notes are stored into an =sqlite= database using the
+     =okfn/annotator= API and thus their JSON format.
   
 * development
 
@@ -20,7 +20,35 @@
      CALIBRE_DEVELOP_FROM=../calibre-src/src calibre-debug -w path-to.epub
    #+end_src
 
-* current approach (2013-11-09)
+* importing
+
+  as of now, this is a harder problem. my next investigation in this
+  area will follow things discussed below like in
+  =AnnotationProcessor.py= and =anchortext.py=
+
+* displaying and editing annotations
+
+  here's how i am doing it now.
+
+  - clone https://github.com/kovidgoyal/calibre and get it running a la "development" above
+  - checkout your own branch (or not) and copy =main.py=, =main.ui=, and =documentview.py=
+    into =src/calibre/gui2/viewer/=, replacing the old
+  - visit https://github.com/okfn/annotator/downloads/ and get the
+    annotator files and unzip them somewhere
+  - compile =store.coffee= to =store.js= and put that into the
+    unzipped =annotator='s directory
+  - edit =documentview.py= and go to the "HACKING IN JAVASCRIPT" part
+    and modify the paths appropriately. basically you can verify if
+    the imports are working or not, if when you load up =ebook-viewer=
+    and fire up the inspector, go to the console and see if
+    =$(document.body).annotator()= returns a function.
+  - make sure you have =pip install elixir=
+  - beware of the =sys.path= hacks the files here
+
+  that should be it. i'm not forking calibre because master updates
+  too frequently and i'm experimenting around here.
+  
+* notes from current approach (2013-11-09)
 
   for former findings from fiddling around, find the final figment: [[2013-11-07]]
   
