@@ -61,15 +61,18 @@ def apply_highlight(base_text, insertion_list):
     return "".join(rtn)
 
 def apply_anchor_range(anchor0, anchor1, base_text):
-    return apply_anchor(anchor0, base_text), apply_anchor(anchor1, base_text)+len(anchor1.token)
+    idx0 = apply_anchor(anchor0, base_text)
+    # later anchor must be after early anchor
+    idx1 = apply_anchor(anchor1, base_text, idx0) +len(anchor1.token)
+    return idx0, idx1
 
-def apply_anchor(anc, base_text):
+def apply_anchor(anc, base_text, force_start_index = 0):
     """
     returns exact begin and end offset
     based on `anchor`
     """
-    idx_start = max(0,              anc.approximate_offset - len(anc.token) * PRE_MULTIPLIER)
-    idx_end   = min(len(base_text), anc.approximate_offset + len(anc.token) * POST_MULTIPLIER) - len(anc.token)
+    idx_start = max(force_start_index, anc.approximate_offset - len(anc.token) * PRE_MULTIPLIER)
+    idx_end   = min(len(base_text),    max(idx_start, anc.approximate_offset) + len(anc.token) * POST_MULTIPLIER)
 
     match_list = []
     idx_current = idx_start
