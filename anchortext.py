@@ -4,7 +4,11 @@
 import json
 from tfidf import *
 
-
+# FIXME
+# these are multiplied with the target token's length.  right now i don't see
+# why that is a good idea. not that it makes very much of a difference between
+# having a hard-coded look-before and look-ahead value.  the immediate impact
+# is that short tokens are more restricted than long tokens.
 PRE_MULTIPLIER = 10
 POST_MULTIPLIER = 10
 
