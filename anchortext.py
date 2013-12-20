@@ -152,10 +152,6 @@ def make_anchor_range(desired_text, approximate_offset, current_document_index, 
     offset0 = approximate_offset
     offset1 = approximate_offset + len(desired_text) - len(token1)
 
-    # TODO FIXME
-    # need to re-check fitness of anchors if multiple candidates appear in
-    # search range.  currently we are getting excessively wide anchoring
-    # ranges, leading to text that is too long on reapplication of anchors
     anchor0 = make_anchor(token0, offset0, current_document_index, base_document_list)
     anchor1 = make_anchor(token1, offset1, current_document_index, base_document_list)
 
