@@ -27,12 +27,12 @@ class Anchor:
         return rtn
 
     def to_dict(self):
-        return json.dumps(dict(
+        return dict(
             token = self.token,
             aoffset = self.approximate_offset,
             roffset = self.relative_offset,
-            support = [anc.to_json() for anc in self.support_anchor_list],
-            ))
+            support = [anc.to_dict() for anc in self.support_anchor_list],
+            )
 
     def to_json(self):
         return json.dumps(self.to_dict())
