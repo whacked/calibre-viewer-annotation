@@ -52,7 +52,7 @@ def get_word_score(word):
 
 def tokenize(s):
     """
-    returns: [(token:str, offset:int)]
+    returns: [(offset:int, token:str)]
     entities will get split too!
     """
     lastidx = 0
