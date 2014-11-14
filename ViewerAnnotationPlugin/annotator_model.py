@@ -1,5 +1,15 @@
 # exactly as
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/model.py
+
+# <path_hack>
+# PATH HACK!!!
+# this is to allow calibre to include the local install of sqlalchemy and elixir.
+# don't know how to bundle them nicely inside the plugin directory alone.
+import os, sys
+sys.path.append(os.getcwd())
+sys.path.insert(0, os.path.expanduser("/usr/local/lib/python2.7/dist-packages")) # for elixir
+# </path_hack>
+
 from elixir import *
 from flask import json
 
