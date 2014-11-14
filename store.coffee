@@ -347,7 +347,7 @@ class Annotator.Plugin.Store extends Annotator.Plugin
     # store a global reference to be called from python
     window.evil_callback = onSuccess
     myajax = (url, opt) ->
-        py_bridge.AJAX(url, JSON.stringify(opt))
+        py_annotator.AJAX(url, JSON.stringify(opt))
         {}
 
     request = myajax(url, options)
