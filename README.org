@@ -51,7 +51,12 @@
      =elixir=. It is currently hard-coded to search in
      =/usr/local/lib/python2.7/dist-packages=. There's probably a way
      to make this self-contained but I don't know it.
-
+  8. in your terminal/command line program, navigate to the
+     =ViewerAnnotationPlugin= directory and run =calibre-customize -b.=
+     to install the plugin. If successful your =ebook-viewer= should
+     incorporate the annotations. By default it will create a sqlite
+     database =ebook-viewer-annotation.db= into your home directory.
+     
 * importing annotations
 
   as of now, this is a harder problem. my next investigation in this
