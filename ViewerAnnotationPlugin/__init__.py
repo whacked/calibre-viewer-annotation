@@ -22,6 +22,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.Qt import (
         QApplication, QWidget, QModelIndex,
+        QPixmap, QIcon, QAction,
         QDockWidget, QVBoxLayout, pyqtSlot,
         )
 
@@ -233,14 +234,10 @@ class ViewerAnnotationPlugin(ViewerPlugin):
     version             = (0, 0, 1)
     minimum_calibre_version = (0, 7, 53)
 
-    def customize_context_menu(self, menu, event, hit_test_result):
-        dlog('hello context menu')
+    # def customize_context_menu(self, menu, event, hit_test_result):
+    #     pass
 
     def customize_ui(self, ui):
-        from PyQt5.Qt import (
-            QPixmap,
-            QIcon, QAction, QDockWidget,
-        )
         self._view = ui
 
         ui.tool_bar.addSeparator()
