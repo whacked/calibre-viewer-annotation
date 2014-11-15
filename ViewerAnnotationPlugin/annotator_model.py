@@ -20,6 +20,7 @@ def setup_in_memory():
 class Annotation(Entity):
     id     = Field(Integer, primary_key=True)
     uri    = Field(UnicodeText)
+    title  = Field(UnicodeText)
     text   = Field(UnicodeText)
     user   = Field(UnicodeText)
     extras = Field(UnicodeText, default=u'{}')

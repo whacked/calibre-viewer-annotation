@@ -49,7 +49,11 @@ class AnnotationTOC(TOC):
         toc = []
         for spine in self._spine_list:
             base_path, href = os.path.split(spine)
-            annot_resultset = json.loads(AStore.search_annotations(uri = "epub://" + href))
+            dlog('updating annotation list for %s' % self.book_title)
+            annot_resultset = json.loads(AStore.search_annotations(
+                uri = "epub://" + href,
+                title = self.book_title,
+            ))
             # dlog('searching for: %s/%s' % (base_path, href))
             if annot_resultset["total"] > 0:
                 for row in annot_resultset["rows"]:
@@ -96,11 +100,12 @@ class AnnotationTOC(TOC):
                 ))
 
 
-    def __init__(self, spine):
+    def __init__(self, spine, book_title):
         QStandardItemModel.__init__(self)
         toc = []
 
         self.base_path = os.path.split(spine[0])[0]
+        self.book_title = book_title
         self._spine_list = spine
         ## now populate the current notes 
         self.update_current_annotation_list()
@@ -168,7 +173,10 @@ class Responder(QtCore.QObject):
                 ## search request. by convention it probably ends with /search
                 ## but who cares now
                 ## document.bridge_value = AStore.search_annotations(uri = jsr["data"]["uri"])
-                annot_resultset = json.loads(AStore.search_annotations(uri = jsr["data"]["uri"]))
+                annot_resultset = json.loads(AStore.search_annotations(
+                    uri = jsr["data"]["uri"],
+                    title = ebookviewer.current_title,
+                ))
                 if annot_resultset["total"] > 0:
                     res = {"rows": []}
                     for row in annot_resultset["rows"]:
@@ -188,13 +196,15 @@ class Responder(QtCore.QObject):
             ## hack in the calibre viewer position
             bm = self.parent().bookmark()
             bm['spine'] = ebookviewer.current_index
-            data["calibre_bookmark"] = bm
+            data['calibre_bookmark'] = bm
+            data['title'] = ebookviewer.current_title
             AStore.create_annotation(data)
             should_update_annotation_list = True
         #update:  PUT
         elif request_type == "PUT":
             dlog("PUT %s" % url)
             data = json.loads(jsr["data"])
+            data['title'] = ebookviewer.current_title
             if "id" in data:
                 AStore.update_annotation(data["id"], data)
         #destroy: DELETE
@@ -367,7 +377,7 @@ class ViewerAnnotationPlugin(ViewerPlugin):
             an_list.setObjectName('annotation_toc')
             an_list.setCursor(Qt.PointingHandCursor)
 
-            self._view.annotation_toc_model = AnnotationTOC(ui.iterator.spine)
+            self._view.annotation_toc_model = AnnotationTOC(ui.iterator.spine, self._view.current_title)
             an_list.setModel(self._view.annotation_toc_model)
 
             ui.annotation_toc = an_list
