@@ -2,9 +2,9 @@
 
 * adding annotation (read and write) capability to calibre's ebook-viewer
   
-  sporadic work in progress.
+  sporadic work in progress. last updated on 2014-11-14
 
-  [[./doc/img/ss-006.png]]
+  [[./doc/img/ss-007.png]]
   
   There are 2 main issues we care about here, addressed in headings below
 
@@ -13,40 +13,78 @@
      =ebook-viewer= program. this is doable now. read below for
      details. notes are stored into an =sqlite= database using the
      =okfn/annotator= API and thus their JSON format.
-  
-* development
 
-   currently lauching the program this way:
+* external dependencies
 
-   #+begin_src sh :eval never
-     CALIBRE_DEVELOP_FROM=../calibre-src/src calibre-debug -w path-to.epub
-   #+end_src
+  - sqlalchemy
+  - [[http://elixir.ematia.de/trac/wiki][elixir]]
+    
+  both should be installable via pip; due to *PATH HACK* below, we're
+  assuming a system install where you know the inclusion path for both
+  libraries
 
-* importing
+* installing+using the plugin
+
+  With calibre 2 this is considerably easier, but this plugin is *NOT*
+  pre-packaged and ready to use. This is the only method I'm familiar
+  with now. A quick step by step:
+
+  1. ensure you have a working development environment set up
+  2. clone this repo
+  3. edit the *PATH HACK* =ViewerAnnotationPlugin/annotator_model.py=
+     so calibre is able to see your local install of =sqlalchemy= and
+     =elixir=. It is currently hard-coded to search in
+     =/usr/local/lib/python2.7/dist-packages=. There's probably a way
+     to make this self-contained but I don't know it.
+  4. in your terminal/command line program, navigate to the
+     =ViewerAnnotationPlugin= directory and run =calibre-customize -b.=
+     to install the plugin. If successful your =ebook-viewer= should
+     incorporate the annotations. By default it will create a sqlite
+     database =ebook-viewer-annotation.db= into your home directory.
+     
+* importing annotations
 
   as of now, this is a harder problem. my next investigation in this
   area will follow things discussed below like in
   =AnnotationProcessor.py= and =anchortext.py=
-
-* displaying and editing annotations
-
-  here's how i am doing it now.
-
-  - clone https://github.com/kovidgoyal/calibre and get it running a la "development" above
-  - checkout your own branch (or not) and copy =main.py=, =main.ui=, and =documentview.py=
-    into =src/calibre/gui2/viewer/=, replacing the old
-  - visit https://github.com/okfn/annotator/downloads/ and get the
-    annotator files and unzip them somewhere
-  - compile =store.coffee= to =store.js= and put that into the
-    unzipped =annotator='s directory
-  - edit =documentview.py= and go to the "HACKING IN JAVASCRIPT" part
-    and modify the paths appropriately. basically you can verify if
-    the imports are working or not, if when you load up =ebook-viewer=
-    and fire up the inspector, go to the console and see if
-    =$(document.body).annotator()= returns a function.
-  - make sure you have =pip install elixir=
-  - beware of the =sys.path= hacks the files here
-
-  that should be it. i'm not forking calibre because master updates
-  too frequently and i'm experimenting around here.
   
+* development
+  
+  The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
+  although the viewer plugin is slightly different. refer to the
+  [[http://manual.calibre-ebook.com/plugins.html#viewer-plugins][Viewer plugins]] section in the calibre API documentation.
+  
+  To play with the code, edit the code in the =ViewerAnnotationPlugin=
+  directory, then run
+
+  #+BEGIN_SRC sh :eval never
+    calibre-customize -b . && ebook-viewer $PATH_TO_EPUB
+  #+END_SRC
+  
+  and it should launch the viewer with the changes applied.
+  
+** okfn/annotator files
+
+   current code is hard-coded to expect =annotator-full.1.2.7=
+   for javascript/css. For a different version:
+
+   1. visit https://github.com/okfn/annotator/downloads/
+   2. if you've unzipped e.g. annotator-full.1.2.7.zip, you should get
+      a directory =annotator-full.1.2.7/= with a =.js= and a =.css= file
+      inside it. Move this directory into the =ViewerAnnotationPlugin=
+      directory.
+   3. edit =ViewerAnnotationPlugin/__init__.py= and find the
+      =load_javascript= and =run_javascript= sections and make sure the
+      paths there correspond to your extracted annotator js/css
+      files.
+
+** okfn/annotator plugin (store.js)
+
+   see =store.coffee=; =store.js= is derived from =coffee --compile store.coffee=
+   then moved into =ViewerAnnotationPlugin=
+
+* issues
+
+  - either the js file inclusion or css style injection or both cause
+    long pauses in the reader when navigating between epub chapter
+    boundaries
