@@ -23,6 +23,17 @@
   assuming a system install where you know the inclusion path for both
   libraries
 
+** alternative installation
+
+   you can download and extract sqlalchemy and elixir and
+
+   - mv SQLAlchemy-0.9.8/lib/sqlalchemy calibre/lib/python2.7/site-packages
+   - mv elixir calibre/lib/python2.7/site-packages
+
+*** modifications to elixir
+
+    edit elixir/entity.py and change ScopedSession import to 'scoped_session as ScopedSession'
+    
 * installing+using the plugin
 
   With calibre 2 this is considerably easier, but this plugin is *NOT*
