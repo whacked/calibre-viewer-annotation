@@ -140,10 +140,11 @@ function get_corpus_coverage(corpus, token_list) {
 output = {};
 
 // 3. second pass
-function launch_and_find(source_filepath, entry) {
-    search_window = gui.Window.open("file://" + source_filepath, {
+function launch_and_find(source_filepath, entry, keep_child_open) {
+    var search_window = gui.Window.open("file://" + source_filepath, {
         "inject-js-start": "node_modules/xpath-range/xpath-range-bundle.js",
-        "inject-js-end": "js/driver.js"
+        "inject-js-end": "js/driver.js",
+        position: "mouse"
     });
     search_window.on("loaded", function() {
         // this console is still the parent's console
