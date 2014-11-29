@@ -54,11 +54,77 @@
      database =ebook-viewer-annotation.db= into your home directory.
      
 * importing annotations
-
+  
   as of now, this is a harder problem. my next investigation in this
   area will follow things discussed below like in
   =AnnotationProcessor.py= and =anchortext.py=
   
+** update 2014-11-28
+
+   prelim importer logic. very hacky. briefly:
+
+*** step 0. get node-webkit working!
+
+   inside nw-extractor
+
+*** npm install
+
+    - glob, html-entities, js-yaml, xpath-range
+    - browserify (needed for xpath-range)
+
+*** build xpath-range =doMagic= function
+
+    copy paste from https://github.com/openannotation/xpath-range, BUT you want the range *returned*, so:
+
+    #+BEGIN_SRC javascript :eval never
+      Range = require("xpath-range").Range;
+      
+      doMagic = function() {
+        range    = getSelection().getRangeAt(0);
+        bRange = new Range.BrowserRange(range);
+        sRange = bRange.serialize(document.body);
+        console.log(sRange);
+        return sRange;
+      }
+      
+    #+END_SRC
+
+    save as =xpath-range.js= (we're now in =nw-extractor/node_modules/xpath-range=)
+
+    then run =browserify xpath-range.js -o xpath-range-bundle.js=
+
+*** compile =cfi.coffee= from calibre
+
+    =coffee --compile cfi.coffee=
+
+    this is what's inside =driver.js=
+
+*** =driver.js=
+
+    with current method, we're delegating html range finding to a spawned child window.
+    since we don't want to alter the dom, we use node-webkit's =inject-js-start= and =inject-js-end=
+    to send it the functions we want. so =driver.js= must contain all the range finder code.
+
+    then append =cfi.js= into =driver.js=
+
+*** generate highlights yml files
+
+**** amazon kindle retrieval (ruby)
+
+     =gem install yaml kindle_highlights=
+
+     see =get_kindle_highlights.rb=, set your amazon email and password, then use it to generate yml files for import
+     
+*** get exploded epub directory
+
+    this is generated when ebook-viewer runs. you can just =cp -r= the dir.
+
+    or you can run the =nw-extractor= while ebook-viewer runs...
+
+*** running the node-webkit app
+
+    =$RUNCOMMAND= =path-to-exploded-epub-dir= =path-to-highlight-yml=
+
 * development
   
   The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],

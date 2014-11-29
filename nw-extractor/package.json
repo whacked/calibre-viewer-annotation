@@ -1,0 +1,9 @@
+{
+    "name": "extractor",
+    "main": "index.html",
+    "inject-js-end": "js/driver.js",
+    "window": {
+        "position": "mouse"
+    }
+}
+

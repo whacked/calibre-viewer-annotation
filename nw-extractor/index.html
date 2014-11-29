@@ -1,0 +1,355 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>reconcile shtuf.</title>
+
+    <script type="text/javascript" src="node_modules/xpath-range/node_modules/jquery/dist/cdn/jquery.js"></script>
+    <script type="text/javascript" src="node_modules/js-yaml/dist/js-yaml.js"></script>
+
+<script>
+
+var gui = require("nw.gui");
+
+console.log(gui.App.argv.length);
+if(gui.App.argv.length < 2) {
+    process.stdout.write("\n");
+    process.stdout.write("    need 2 arguments:\n");
+    process.stdout.write("    - path-to-exploded-epub\n");
+    process.stdout.write("    - path-to-annotation-yml\n");
+    process.stdout.write("\n");
+    gui.App.quit();
+}
+
+fs = require('fs');
+path = require('path');
+glob = require('glob');
+Entities = require('html-entities').AllHtmlEntities;
+
+var BOOK_TMP_DIR = gui.App.argv[0];
+var YML_SRC_PATH = gui.App.argv[1];
+
+var should_not_proceed = false;
+if(!fs.existsSync(BOOK_TMP_DIR)) {
+    process.stdout.write("\nsupplied book directory does not exist!\n");
+    should_not_proceed = true;
+}
+if(!fs.existsSync(YML_SRC_PATH)) {
+    process.stdout.write("\nsupplied yml file does not exist!\n");
+    should_not_proceed = true;
+}
+if(should_not_proceed) {
+    gui.App.quit();
+}
+
+// Get the current window
+var main_window = gui.Window.get();
+// main_window.setPosition("center");
+main_window.x = 200;
+main_window.y = 800;
+// main_window.toggleFullscreen();
+
+main_window.focus();
+
+// main_window.showDevTools() 
+window.addEventListener('keydown', function(evt) {
+    if(evt.ctrlKey && evt.keyCode == 81) { // q
+        gui.App.quit();
+    }
+});
+
+process.stdout.write("\n");
+process.stdout.write(">>> exploded epub directory: " + BOOK_TMP_DIR + "\n");
+process.stdout.write(">>> annotation yml filepath: " + YML_SRC_PATH);
+process.stdout.write("\n\n");
+
+</script>
+<style>
+td.yes-found {
+    background-color: lime;
+}
+td.not-found {
+    background-color: maroon;
+}
+
+</style>
+
+</head>
+<body>
+
+<div id="status"></div>
+<table border="1"></table>
+
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+
+
+entities = new Entities();
+
+// read highlights file
+yml = jsyaml.safeLoad(fs.readFileSync(YML_SRC_PATH, "utf-8"));
+yml.highlight_list.sort(function(a,b){return a.startLocation-b.startLocation});
+
+/**
+ * strategy:
+   1. find all files that exist from the exploded epub
+   2. first pass to build up candidate mapping of highlight_text -> part_file
+      to process in 2nd pass. store the stuff that we can't find in a
+      separate list and display that for manual marking
+   3. second pass through the html list and actually mark the positions
+      in range/cfi components
+
+   it is probably possible to do this in 1 pass.  but
+   since we don't know the correct kindle
+   location->calibre page mapping, and there may be
+   other position formats as well, it might be better
+   to just keep it 2-pass; first pass to establish
+   ranges and second to derive anchors.
+ */
+
+// 1. get list of files from exploded epub, cache text
+function make_result(index, score, source_file) {
+    return {
+          index: index
+        , score: score
+        , source: source_file
+    };
+}
+
+function clean_string(s) {
+    return entities.decode(s.replace(/\s+$/, "").replace(/^\s+/, ""));
+}
+
+// a quick and dirty way to assess whether we should
+// assume a match is found. corpus is assumed to be
+// a fair bit longer than token_list. we want to see
+// whether most of `token_list` exists in `corpus`.
+// A better method would be to first extract all text
+// in corpus, and minify it (remove extraneous spaces
+// and symbols), then get something like levenshtein
+// distance.
+function get_corpus_coverage(corpus, token_list) {
+    var hit_count = 0;
+    token_list.forEach(function(token) {
+        if(corpus.indexOf(token) > -1) {
+            hit_count++;
+        }
+    });
+    return hit_count;
+}
+
+output = {};
+
+// 3. second pass
+function launch_and_find(source_filepath, entry) {
+    search_window = gui.Window.open("file://" + source_filepath, {
+        "inject-js-start": "node_modules/xpath-range/xpath-range-bundle.js",
+        "inject-js-end": "js/driver.js"
+    });
+    search_window.on("loaded", function() {
+        // this console is still the parent's console
+        // console.log("LOADED!!!")
+
+        // this is the spawn's console
+        // search_window.window.console.log("LOADED!!!");
+
+        // repeat fuzzy find; the target's presence SHOULD be
+        // guaranteed at this point
+        var child_window = search_window.window;
+        var search_string = clean_string(entry.highlight);
+        var token_list = search_string.split(/\s+/);
+
+        // to store the final result for writing to db!
+        var annotation_object = null;
+
+        if(token_list.length < 4) {
+            // direct match
+            child_window.find(search_string);
+        } else {
+
+            var safety = 5000;
+
+            while(safety-- > 0) {
+                // child_window.find(token_list[0]);
+                // try a more aggressive method
+                child_window.find(search_string.substr(0, 20));
+                var sel = child_window.getSelection();
+                var rng = sel.getRangeAt(0);
+                // this seems to a much larger length reduction
+                // (due to intervening non-text nodes and what not)
+                // than in the first-pass substring, so use a more
+                // liberal length extender
+                // 
+                // rng.commonAncestorContainer might == sel.anchorNode, whatever
+                child_window.setSelectionRange(rng.commonAncestorContainer.parentNode,
+                        rng.startOffset, rng.startOffset+search_string.length*4);
+                var sel_substring = child_window.getSelection().toString();
+                console.log("RANGE:", rng.startOffset, rng.startOffset+search_string.length*4);
+                console.log(sel_substring);
+                var hit_count = get_corpus_coverage(sel_substring, token_list);
+                var score = hit_count/token_list.length;
+                if(score > 0.7) {
+                    console.log("found with score " + score);
+                    break;
+                }
+            }
+        }
+
+        // again, we are assuming the match has succeeded!
+        child_window.getSelection().anchorNode.parentNode.scrollIntoView();
+        sRange = child_window.doMagic();
+
+        // THIS IS WHAT WE'VE BEEN WAITING FOR!
+        annotation_object = sRange.toObject();
+        // append the cfi for Annotation Store
+        annotation_object["extras"] = {
+            calibre_bookmark: {
+                type: "cfi",
+                pos: child_window.cfi.at_current()
+            }
+        };
+
+        if(annotation_object) {
+            output[entry.highlight] = annotation_object;
+        }
+    });
+
+}
+
+var book_text_map = {};
+var html_map = {};
+var annot_map = {};
+var failure_list = [];
+glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
+    file_list.sort();
+    file_list.forEach(function(filepath) {
+        html_map[filepath] = fs.readFileSync(filepath, "utf-8")
+        // console.log("read: " + html_map[filepath].length + " bytes from " + filepath);
+    });
+
+    // 2. build candidate mapping
+    var file_start_index = 0;
+    yml.highlight_list.forEach(function(entry) {
+        var search_string = clean_string(entry.highlight);
+        // port of "fuzzy search" see processkinde.py
+
+        // since both the file list and annotation list are sorted, in every
+        // annotation entry iteration we will exclude all files processed prior
+        // to the latest match
+        var file_index = file_start_index;
+        for(var file_index = file_start_index; file_index<file_list.length; ++file_index) {
+            var filepath = file_list[file_index];
+            var corpus = html_map[filepath];
+            var token_list = search_string.split(/\s+/);
+            if(token_list.length < 4) {
+                // direct match
+                var loc = corpus.indexOf(search_string)
+                if(loc > -1) {
+                    annot_map[entry.highlight] = make_result(loc, 1.0, filepath);
+                    file_start_index = file_index;
+                    break;
+                }
+            } else {
+                var check_length = search_string.length*2; var offset = 0;
+                var safety = 1000;
+                var substring = null;
+                while(offset < corpus.length) {
+                    if(safety-- < 0) {
+                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
+                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
+                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
+                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
+                        console.log(search_string, substring);
+                        return;
+                    }
+                    if(corpus.substr(offset).indexOf(token_list[0]) == -1) {
+                        break;
+                    }
+
+                    var found_index = offset + corpus.substr(offset).indexOf(token_list[0]);
+                    substring = corpus.substr(found_index, check_length);
+                    if(substring.indexOf(token_list[token_list.length-1]) == -1) {
+                        offset = found_index+token_list[0].length;
+                        continue;
+                    }
+
+                    // at this point, the first token check is redundant, but who cares
+                    var hit_count = get_corpus_coverage(substring, token_list);
+                    var score = hit_count/token_list.length;
+                    if(score > 0.7) {
+                        // console.log("FOUND! with score "+score);
+                        annot_map[entry.highlight] = make_result(offset, score, filepath);
+                        file_start_index = file_index;
+                        break;
+                    } else {
+                        offset = found_index+token_list[0].length;
+                    }
+                }
+            }
+        }
+    });
+
+    yml.highlight_list.forEach(function(entry) {
+        if(!annot_map[entry.highlight]) {
+            failure_list.push(entry.highlight);
+        }
+    });
+
+    $("#status").html(Object.keys(annot_map).length + " in result, " + failure_list.length + " failures");
+
+    // results display
+    var tbl = $("table");
+    var key_list = ["timestamp", "highlight", "startLocation", "endLocation"];
+    var exclude_key_list = ["asin", "customerId", "embeddedId", "howLongAgo"];
+    yml.highlight_list.forEach(function(entry) {
+        if(tbl.children().length == 0) {
+            key_list.push("found?");
+
+            var tr = $("<tr>").appendTo(tbl);
+            $("<th>").html("TEST").appendTo(tr);
+            key_list.forEach(function(key) {
+                if(key.match(/Id$/) || key)
+                var th = $("<th>").html(key).appendTo(tr);
+            });
+        }
+
+        var tr = $("<tr>");
+        var test_button = $("<button>").html("test");
+        $("<td>").append(test_button).appendTo(tr);
+        key_list.forEach(function(key) {
+            var td = $("<td>");
+            switch(key) {
+            case "found?":
+                if(annot_map[entry.highlight]) {
+                    var res = annot_map[entry.highlight];
+                    var spl = res.source.split(path.sep);
+                    td.html(res.score.toFixed(3) + " " + spl[spl.length-1]);
+                    td.attr({class: "yes-found"});
+
+                    test_button.click(function() {
+                        launch_and_find(res.source, entry);
+                    });
+                } else {
+                    td.attr({class: "not-found"});
+                }
+                break;
+            case "timestamp":
+                td.html(new Date(entry[key]));
+                break;
+            default:
+                if(entry[key]) {
+                    td.html(entry[key]).appendTo(tr);
+                }
+            }
+            td.appendTo(tr);
+        });
+        tr.appendTo(tbl);
+    });
+
+
+});
+
+        });
+
+    </script>
+</body>
+</html>
