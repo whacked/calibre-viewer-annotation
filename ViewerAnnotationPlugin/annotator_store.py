@@ -1,5 +1,6 @@
 # modified from
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/store.py
+import datetime
 import json
 from annotator_model import Annotation, Range, session
 import socket
@@ -10,8 +11,14 @@ __all__ = ["app", "store", "setup_app"]
 
 # We define our own jsonify rather than using flask.jsonify because we wish
 # to jsonify arbitrary objects (e.g. index returns a list) rather than kwargs.
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return str(obj)
+        else:
+            return json.JSONEncoder.default(self, obj)
 def jsonify(obj, *args, **kwargs):
-    res = json.dumps(obj, indent=2)
+    res = json.dumps(obj, cls=DateTimeEncoder)
     return res
 
 def unjsonify(str):
