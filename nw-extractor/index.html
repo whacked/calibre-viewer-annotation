@@ -7,6 +7,10 @@
     <script type="text/javascript" src="node_modules/js-yaml/dist/js-yaml.js"></script>
 
 <script>
+/**
+ * TODO
+ * should capture + display selection from child window for final reconcilation/manual fix
+ */
 
 var gui = require("nw.gui");
 
@@ -217,15 +221,22 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
         sRange = child_window.doMagic();
 
         // THIS IS WHAT WE'VE BEEN WAITING FOR!
-        annotation_object = sRange.toObject();
-        // append the cfi for Annotation Store
-        annotation_object["extras"] = {
-            calibre_bookmark: {
-                type: "cfi",
-                pos: child_window.cfi.at_current()
+        annotation_object = {
+            uri: "epub://"+source_filepath.split(path.sep).pop(),
+            title: book_title,
+            text: entry.highlight,
+            "ranges": [
+                sRange.toObject()
+            ],
+            // append the cfi for Annotation Store
+            "extras": {
+                calibre_bookmark: {
+                    type: "cfi",
+                    pos: child_window.cfi.at_current(),
+                    spine: spine_map[source_filepath]
+                }
             }
-        };
-
+        }
         if(annotation_object) {
             output[entry.highlight] = annotation_object;
             if(close_after_ms != null) {
@@ -244,15 +255,25 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
 
 }
 
+/**
+ * globals for caching useful data.
+ * TODO XXX not sure about spine_map yet --
+ * it's supposed to correspond to EbookViewer.iterator.spine.
+ * i'm guessing it has length of N extracted html pages + 1
+ * where +1 is index 0, or the cover. hence we ignore index 0
+ */
+var spine_map = {};
 var html_map = {};
 var annot_map = {};
 var failure_list = [];
 glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
     file_list.sort();
-    file_list.forEach(function(filepath) {
-        html_map[filepath] = fs.readFileSync(filepath, "utf-8")
+    for(var file_index=0; file_index<file_list.length; ++file_index) {
+        var filepath = file_list[file_index];
+        html_map[filepath] = fs.readFileSync(filepath, "utf-8");
         // console.log("read: " + html_map[filepath].length + " bytes from " + filepath);
-    });
+        spine_map[filepath] = file_index+1;
+    }
 
     // 2. build candidate mapping
     var file_start_index = 0;
