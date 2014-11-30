@@ -11,6 +11,8 @@ def setup_in_memory():
     setup_all(True)
 
 class Annotation(Entity):
+    using_options(tablename='annotation')
+
     id     = Field(Integer, primary_key=True)
     uri    = Field(UnicodeText)
     title  = Field(UnicodeText)
@@ -93,6 +95,8 @@ class Annotation(Entity):
         return '<Annotation %s "%s">' % (self.id, self.text)
 
 class Range(Entity):
+    using_options(tablename='range')
+
     id          = Field(Integer, primary_key=True)
     start       = Field(Unicode(255))
     end         = Field(Unicode(255))
@@ -105,6 +109,8 @@ class Range(Entity):
         return '<Range %s %s@%s %s@%s>' % (self.id, self.start, self.startOffset, self.end, self.endOffset)
 
 class Consumer(Entity):
+    using_options(tablename='consumer')
+
     key    = Field(String(512), primary_key=True, required=True)
     secret = Field(String(512), required=True)
     ttl    = Field(Integer, default=3600, nullable=False)
