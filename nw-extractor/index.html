@@ -73,13 +73,7 @@ glob(path.join(BOOK_TMP_DIR, "*/metadata.opf"), function(err, file_list) {
     var title_btag = "<dc:title>";
     var title_etag = "</dc:title>";
     var txt = fs.readFileSync(file_list[0], "utf-8");
-    for(var i = 0, ll = txt.split("\n"); i < ll.length; ++i) {
-        var title_tag_index = ll[i].indexOf(title_btag);
-        if(title_tag_index > -1) {
-            book_title = ll[i].substring(title_tag_index+title_btag.length, ll[i].indexOf(title_etag));
-            break;
-        }
-    }
+    book_title = txt.substring(txt.indexOf(title_btag)+title_btag.length, txt.indexOf(title_etag));
 });
 
 </script>
