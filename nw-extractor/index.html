@@ -62,6 +62,22 @@ process.stdout.write(">>> exploded epub directory: " + BOOK_TMP_DIR + "\n");
 process.stdout.write(">>> annotation yml filepath: " + YML_SRC_PATH);
 process.stdout.write("\n\n");
 
+// hacky way to get the book title
+// this is global!!!
+var book_title;
+glob(path.join(BOOK_TMP_DIR, "*/metadata.opf"), function(err, file_list) {
+    var title_btag = "<dc:title>";
+    var title_etag = "</dc:title>";
+    var txt = fs.readFileSync(file_list[0], "utf-8");
+    for(var i = 0, ll = txt.split("\n"); i < ll.length; ++i) {
+        var title_tag_index = ll[i].indexOf(title_btag);
+        if(title_tag_index > -1) {
+            book_title = ll[i].substring(title_tag_index+title_btag.length, ll[i].indexOf(title_etag));
+            break;
+        }
+    }
+});
+
 </script>
 <style>
 td.yes-found {
