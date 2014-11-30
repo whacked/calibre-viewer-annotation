@@ -137,10 +137,11 @@ function get_corpus_coverage(corpus, token_list) {
     return hit_count;
 }
 
+// global result cache
 output = {};
 
 // 3. second pass
-function launch_and_find(source_filepath, entry, keep_child_open) {
+function launch_and_find(source_filepath, entry, close_after_ms) {
     var search_window = gui.Window.open("file://" + source_filepath, {
         "inject-js-start": "node_modules/xpath-range/xpath-range-bundle.js",
         "inject-js-end": "js/driver.js",
@@ -184,8 +185,8 @@ function launch_and_find(source_filepath, entry, keep_child_open) {
                 child_window.setSelectionRange(rng.commonAncestorContainer.parentNode,
                         rng.startOffset, rng.startOffset+search_string.length*4);
                 var sel_substring = child_window.getSelection().toString();
-                console.log("RANGE:", rng.startOffset, rng.startOffset+search_string.length*4);
-                console.log(sel_substring);
+                // console.log("RANGE:", rng.startOffset, rng.startOffset+search_string.length*4);
+                // console.log(sel_substring);
                 var hit_count = get_corpus_coverage(sel_substring, token_list);
                 var score = hit_count/token_list.length;
                 if(score > 0.7) {
@@ -211,6 +212,17 @@ function launch_and_find(source_filepath, entry, keep_child_open) {
 
         if(annotation_object) {
             output[entry.highlight] = annotation_object;
+            if(close_after_ms != null) {
+                search_window.on("close", function() {
+                    setTimeout(function() {
+                        // console.log("closing...");
+                        // really close; without true will infinite loop
+                        // see https://github.com/rogerwang/node-webkit/wiki/Window
+                        search_window.close(true);
+                    }, close_after_ms);
+                });
+                search_window.close();
+            }
         }
     });
 
@@ -301,6 +313,7 @@ glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
     var tbl = $("table");
     var key_list = ["timestamp", "highlight", "startLocation", "endLocation"];
     var exclude_key_list = ["asin", "customerId", "embeddedId", "howLongAgo"];
+    var monster_list = [];
     yml.highlight_list.forEach(function(entry) {
         if(tbl.children().length == 0) {
             key_list.push("found?");
@@ -329,6 +342,8 @@ glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
                     test_button.click(function() {
                         launch_and_find(res.source, entry);
                     });
+
+                    monster_list.push([res.source, entry]);
                 } else {
                     td.attr({class: "not-found"});
                 }
@@ -345,6 +360,26 @@ glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
         });
         tr.appendTo(tbl);
     });
+
+    $("<button>").html("RECONCILE ALL").click(function() {
+        var interval_time = 200;
+        var monster_index = 0;
+        var monster_timer = setInterval(function() {
+            process.stdout.write(">>> STATUS: " + Object.keys(output).length + " processed.\n");
+            if(monster_index < monster_list.length) {
+                var pair = monster_list[monster_index];
+                monster_index++;
+                // process.stdout.write("processing from: "+ pair[1] + "\n");
+                launch_and_find(pair[0], pair[1], interval_time);
+            } else {
+                process.stdout.write("ALL DONE :D\n");
+                clearInterval(monster_timer);
+
+                process.stdout.write("write to /tmp/out.json\n");
+                fs.writeFile("/tmp/out.json", JSON.stringify(output, null, 2));
+            }
+        }, interval_time);
+    }).insertAfter(tbl);
 
 
 });
