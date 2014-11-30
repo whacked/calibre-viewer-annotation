@@ -125,6 +125,18 @@
 
     =$RUNCOMMAND= =path-to-exploded-epub-dir= =path-to-highlight-yml=
 
+**** check the highlights + click the =test= button to see if it works
+
+     then scroll to the bottom and click the =reconcile= button and hope it works for everything
+
+     (it doesn't... yet)
+
+*** import the output json
+
+    =python importjson.py /tmp/out.json=
+
+    now the highlights should appear in the target book. unfortunately the bookmark positions and ranges seem to be off for quite a few of them, with no simple way of correction 2014-11-30 00:40:21
+
 * development
   
   The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
