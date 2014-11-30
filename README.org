@@ -44,10 +44,9 @@
      
 * importing annotations
 
-  as of now, this is a harder problem. my next investigation in this
-  area will follow things discussed below like in
-  =AnnotationProcessor.py= and =anchortext.py=
-  
+  harder problem. but see [[https://github.com/whacked/calibre-viewer-annotation/tree/nwapp-annotation-import][nwapp branch]] for progress on importing text
+  from kindle notes
+
 * development
   
   The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
