@@ -189,48 +189,71 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
         // to store the final result for writing to db!
         var annotation_object = null;
 
-        if(token_list.length < 4) {
+        if(child_window.find(search_string)) {
             // direct match
-            child_window.find(search_string);
         } else {
-
-            var safety = 5000;
-
-            while(safety-- > 0) {
-                // child_window.find(token_list[0]);
-                // try a more aggressive method
-                child_window.find(search_string.substr(0, 20));
-                var sel = child_window.getSelection();
-                var rng = sel.getRangeAt(0);
-                // this seems to a much larger length reduction
-                // (due to intervening non-text nodes and what not)
-                // than in the first-pass substring, so use a more
-                // liberal length extender
-                // 
-                // rng.commonAncestorContainer might == sel.anchorNode, whatever
-                child_window.setSelectionRange(rng.commonAncestorContainer.parentNode,
-                        rng.startOffset, rng.startOffset+search_string.length*4);
-                var sel_substring = child_window.getSelection().toString();
-                // console.log("RANGE:", rng.startOffset, rng.startOffset+search_string.length*4);
-                // console.log(sel_substring);
-                var hit_count = get_corpus_coverage(sel_substring, token_list);
-                var score = hit_count/token_list.length;
-                if(score > 0.7) {
-                    console.log("found with score " + score);
+            var sel = child_window.getSelection();
+            // repeatedly search for longest substring, truncating from end
+            var search_length = search_string.length;
+            // 1 is nonsensical, but since the corpus is pre-filtered we expect
+            // it to find it well before that!
+            while(search_length-- > 1) {
+                if(child_window.find(search_string.substr(0, search_length))) {
+                    console.log("breaking from start find on iter: " + search_length);
                     break;
                 }
             }
+            // found longest start match, record for merging later
+            var rng = child_window.getSelection().getRangeAt(0);
+            var startNode = rng.startContainer;
+            var startOffset = rng.startOffset;
+            sel.removeAllRanges();
+
+            // repeatedly search for longest substring, truncating from start
+            var start_index = 1;
+            while(start_index++ < search_string.length) {
+                if(child_window.find(search_string.substr(start_index))) {
+                    console.log("breaking from end find on iter: " + start_index);
+                    break;
+                }
+            }
+            var rng = child_window.getSelection().getRangeAt(0);
+            var endNode = rng.endContainer;
+            var endOffset = rng.endOffset;
+            sel.removeAllRanges();
+
+            var final_range = document.createRange();
+            final_range.setStart(startNode, startOffset);
+            final_range.setEnd(endNode, endOffset);
+            sel.addRange(final_range);
+
         }
 
         // again, we are assuming the match has succeeded!
-        child_window.getSelection().anchorNode.parentNode.scrollIntoView();
+        var sel = child_window.getSelection(),
+            verification_el = $("#td-sel-"+entry.startLocation+"-"+entry.endLocation),
+            verification_string = sel.toString(),
+            verification_token_list = verification_string.split(/\s+/),
+            coverage_hit_count = get_corpus_coverage(entry.highlight, verification_token_list),
+            coverage_score = coverage_hit_count / verification_token_list.length;
+        verification_el.html(verification_string);
+        var r = g = b = 0;
+        if(coverage_score > 0.5) {
+            r = Math.floor(256 * (1-(coverage_score-0.5)*2));
+            g = 256;
+        } else {
+            r = 256;
+            g = Math.floor(256 * (1-(0.5-coverage_score)*2));
+        }
+        verification_el.css({backgroundColor: "rgb("+Math.floor(r)+","+Math.floor(g)+","+b+")"});
+        sel.anchorNode.parentNode.scrollIntoView();
         sRange = child_window.doMagic();
 
         // THIS IS WHAT WE'VE BEEN WAITING FOR!
         annotation_object = {
             uri: "epub://"+source_filepath.split(path.sep).pop(),
             title: book_title,
-            text: entry.highlight,
+            text: search_string,
             "ranges": [
                 sRange.toObject()
             ],
