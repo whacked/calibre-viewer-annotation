@@ -138,6 +138,10 @@ function clean_string(s) {
     return entities.decode(s.replace(/\s+$/, "").replace(/^\s+/, ""));
 }
 
+/**
+ * check each token in token_list for presence in corpus.
+ * order of appearance in corpus must follow order in token_list
+ */
 // a quick and dirty way to assess whether we should
 // assume a match is found. corpus is assumed to be
 // a fair bit longer than token_list. we want to see
@@ -148,11 +152,16 @@ function clean_string(s) {
 // distance.
 function get_corpus_coverage(corpus, token_list) {
     var hit_count = 0;
-    token_list.forEach(function(token) {
-        if(corpus.indexOf(token) > -1) {
+    for(var i = 0, offset = 0; i < token_list.length; ++i) {
+        var token = token_list[i];
+        var found_index = corpus.substr(offset).indexOf(token);
+        if(found_index > -1) {
             hit_count++;
+            offset += found_index;
+        } else {
+            break;
         }
-    });
+    }
     return hit_count;
 }
 
