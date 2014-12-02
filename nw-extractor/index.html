@@ -361,45 +361,48 @@ glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
 
     // results display
     var tbl = $("table");
-    var key_list = ["timestamp", "highlight", "startLocation", "endLocation"];
-    var exclude_key_list = ["asin", "customerId", "embeddedId", "howLongAgo"];
+    var key_list = ["check?", "timestamp", "location", "found?", "highlight", "verification"];
     var monster_list = [];
     yml.highlight_list.forEach(function(entry) {
         if(tbl.children().length == 0) {
-            key_list.push("found?");
-
             var tr = $("<tr>").appendTo(tbl);
-            $("<th>").html("TEST").appendTo(tr);
             key_list.forEach(function(key) {
-                if(key.match(/Id$/) || key)
-                var th = $("<th>").html(key).appendTo(tr);
+                $("<th>").html(key).appendTo(tr);
             });
         }
 
         var tr = $("<tr>");
-        var test_button = $("<button>").html("test");
-        $("<td>").append(test_button).appendTo(tr);
+        var res = annot_map[entry.highlight];
         key_list.forEach(function(key) {
             var td = $("<td>");
             switch(key) {
+            case "check?":
+                var test_button = $("<button>").html("check");
+                td.append(test_button).appendTo(tr);
+                test_button.click(function() {
+                    launch_and_find(res.source, entry);
+                });
+                break;
+            case "timestamp":
+                td.html(new Date(entry[key]));
+                break;
+            case "location":
+                td.html(entry.startLocation + "~" + entry.endLocation + " (" +(entry.endLocation-entry.startLocation)+ ")");
+                break;
             case "found?":
                 if(annot_map[entry.highlight]) {
-                    var res = annot_map[entry.highlight];
                     var spl = res.source.split(path.sep);
                     td.html(res.score.toFixed(3) + " " + spl[spl.length-1]);
                     td.attr({class: "yes-found"});
-
-                    test_button.click(function() {
-                        launch_and_find(res.source, entry);
-                    });
 
                     monster_list.push([res.source, entry]);
                 } else {
                     td.attr({class: "not-found"});
                 }
                 break;
-            case "timestamp":
-                td.html(new Date(entry[key]));
+            case "verification":
+                // leave blank on init
+                td.attr("id", "td-sel-"+entry.startLocation+"-"+entry.endLocation);
                 break;
             default:
                 if(entry[key]) {
