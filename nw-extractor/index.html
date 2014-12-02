@@ -250,6 +250,12 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
                 search_window.close();
             }
         }
+        child_window.addEventListener("keydown", function(evt) {
+            // capture Ctrl-W to close window
+            if(evt.keyCode == 87 && evt.ctrlKey) {
+                search_window.close(true);
+            }
+        });
     });
 
 }
