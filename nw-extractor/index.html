@@ -164,6 +164,7 @@ function get_corpus_coverage(corpus, token_list) {
 }
 
 // global result cache
+n_active_search = 0;
 output = {};
 
 // 3. second pass
@@ -173,6 +174,7 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
         "inject-js-end": "js/driver.js",
         position: "mouse"
     });
+    n_active_search++;
     search_window.on("loaded", function() {
         // this console is still the parent's console
         // console.log("LOADED!!!")
@@ -286,6 +288,7 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
                         // see https://github.com/rogerwang/node-webkit/wiki/Window
                         search_window.close(true);
                     }, close_after_ms);
+                    n_active_search--;
                 });
                 search_window.close();
             }
@@ -388,7 +391,7 @@ glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
         }
     });
 
-    $("#status").html(Object.keys(annot_map).length + " in result, " + failure_list.length + " failures");
+    $("#status").html(Object.keys(annot_map).length + " found, " + failure_list.length + " failures ("+yml.highlight_list.length+" total)");
 
     // results display
     var tbl = $("table");
@@ -446,7 +449,7 @@ glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
     });
 
     $("<button>").html("RECONCILE ALL").click(function() {
-        var interval_time = 200;
+        var interval_time = 150;
         var monster_index = 0;
         var monster_timer = setInterval(function() {
             process.stdout.write(">>> STATUS: " + Object.keys(output).length + " processed.\n");
@@ -456,11 +459,13 @@ glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
                 // process.stdout.write("processing from: "+ pair[1] + "\n");
                 launch_and_find(pair[0], pair[1], interval_time);
             } else {
-                process.stdout.write("ALL DONE :D\n");
-                clearInterval(monster_timer);
+                if(n_active_search == 0) {
+                    process.stdout.write("ALL DONE :D\n");
+                    clearInterval(monster_timer);
 
-                process.stdout.write("write to /tmp/out.json\n");
-                fs.writeFile("/tmp/out.json", JSON.stringify(output, null, 2));
+                    process.stdout.write("write to /tmp/out.json\n");
+                    fs.writeFile("/tmp/out.json", JSON.stringify(output, null, 2));
+                }
             }
         }, interval_time);
     }).insertAfter(tbl);
