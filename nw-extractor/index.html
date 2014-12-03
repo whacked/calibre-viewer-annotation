@@ -249,6 +249,15 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
         sel.anchorNode.parentNode.scrollIntoView();
         sRange = child_window.doMagic();
 
+        if(close_after_ms != null) {
+            // NOTE: it turns out annotator manipulates the dom.
+            // so we need to apply its manipulation prior reading the cfi for calibre
+            // this also means that if you run this with the "check" button (window
+            // doesn't auto close), and capture the cfi from here, it WILL NOT WORK
+            // in calibre
+            child_window.$(child_window.document.body).annotator();
+        }
+
         // THIS IS WHAT WE'VE BEEN WAITING FOR!
         annotation_object = {
             uri: "epub://"+source_filepath.split(path.sep).pop(),
