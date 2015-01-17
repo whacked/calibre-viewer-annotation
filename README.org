@@ -2,7 +2,7 @@
 
 * adding annotation (read and write) capability to calibre's ebook-viewer
   
-  sporadic work in progress. last updated on 2014-11-14
+  sporadic work in progress. last updated on 2015-01-17
 
   [[./doc/img/ss-007.png]]
   
