@@ -273,7 +273,34 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
             "extras": {
                 calibre_bookmark: {
                     type: "cfi",
-                    pos: child_window.cfi.at_current(),
+                    /*
+                       NOTE: we are stripping off the trailing parts of the cfi here.
+                       i.e., "/2/4/2/140/1:2" becomes "/2/4/2/140"
+                       
+                       this is because when we save the cfi in the child window, we're saving
+                       the cfi based on the currently rendered DOM without any annotation
+                       elements applied. But when the annotation object is applied from the
+                       database, the DOM is thus altered and we won't be able to scroll
+                       reliably to the annotation position.
+                       
+                       based on limited testing I have encountered 2 cases:
+                       1. a highlighted word within a <p></p> block. Saving cfi.at_current()
+                          works. But then,
+                       2. if an entire <p></p> block is highlighted, cfi.at_current()
+                          subsequently fails due to the <p>... plain text ...</p> becoming
+                          <p><span class="annotator-hl">... plain text ...</span></p> and the
+                          original cfi no longer finding a match.
+                       
+                       The naive solution was to replace e.g. "/2/4/2/140/1:2" with
+                       "/2/4/2/140/2/1:2", forcing all cfi's to assume an additional child,
+                       but this makes case #1 above fail when the highlight is somewhere
+                       inside the paragraph.
+                       
+                       Instead, then, we're going to assume we can simply ask calibre to
+                       scroll to the parent element. I didn't read whether this conforms with
+                       the cfi spec's expectations, but it seems to work so far.
+                     */
+                    pos: child_window.cfi.at_current().replace(new RegExp("([^/]+)$"), ""), // or manipulate the last fragment if you wish...
                     spine: spine_map[source_filepath]
                 }
             }
