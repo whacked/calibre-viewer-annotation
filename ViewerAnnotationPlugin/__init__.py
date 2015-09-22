@@ -26,8 +26,8 @@ from PyQt5.Qt import (
         QDockWidget, QVBoxLayout, pyqtSlot,
         )
 
-from calibre_plugins.viewer_annotation import annotator_model as AModel
 from calibre_plugins.viewer_annotation import annotator_store as AStore
+from calibre_plugins.viewer_annotation.model import annotator_model as AModel
 from calibre_plugins.viewer_annotation.config import prefs
 
 AModel.metadata.bind = 'sqlite:///%s' % prefs['annotator_db_path']
