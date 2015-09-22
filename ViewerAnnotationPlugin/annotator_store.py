@@ -1,7 +1,7 @@
 # modified from
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/store.py
 import json
-from annotator_model import Annotation, Range, session
+from model.annotator_model import Annotation, Range, session
 import socket
 
 CURRENT_USER_ID = unicode(socket.gethostname())

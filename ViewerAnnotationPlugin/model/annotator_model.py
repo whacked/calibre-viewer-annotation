@@ -1,4 +1,4 @@
-# exactly as
+# almost exactly as
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/model.py
 
 # <path_hack>
@@ -6,18 +6,26 @@
 # this is to allow calibre to include the local install of sqlalchemy and elixir.
 # don't know how to bundle them nicely inside the plugin directory alone.
 import os, sys
+import os.path as _p
 sys.path.append(os.getcwd())
-sys.path.insert(0, os.path.expanduser("/usr/local/lib/python2.7/dist-packages")) # for elixir
+sys.path.insert(0, _p.join(os.getcwd(), 'elixir'))
+
+# CHANGE THIS:
+sys.path.insert(0, _p.expanduser("/usr/lib/python2.7/dist-packages")) # for elixir
 # </path_hack>
 
+import datetime
+import sqlalchemy
 from elixir import *
-from flask import json
+import json
 
 def setup_in_memory():
     metadata.bind = "sqlite:///:memory:"
     setup_all(True)
 
 class Annotation(Entity):
+    using_options(tablename='annotation')
+
     id     = Field(Integer, primary_key=True)
     uri    = Field(UnicodeText)
     title  = Field(UnicodeText)
@@ -25,6 +33,7 @@ class Annotation(Entity):
     user   = Field(UnicodeText)
     extras = Field(UnicodeText, default=u'{}')
     ranges = OneToMany('Range')
+    timestamp = Field(DateTime, default=datetime.datetime.now)
 
     def authorise(self, action, user=None):
         # If self.user is None, all actions are allowed
@@ -99,6 +108,8 @@ class Annotation(Entity):
         return '<Annotation %s "%s">' % (self.id, self.text)
 
 class Range(Entity):
+    using_options(tablename='range')
+
     id          = Field(Integer, primary_key=True)
     start       = Field(Unicode(255))
     end         = Field(Unicode(255))
@@ -111,6 +122,8 @@ class Range(Entity):
         return '<Range %s %s@%s %s@%s>' % (self.id, self.start, self.startOffset, self.end, self.endOffset)
 
 class Consumer(Entity):
+    using_options(tablename='consumer')
+
     key    = Field(String(512), primary_key=True, required=True)
     secret = Field(String(512), required=True)
     ttl    = Field(Integer, default=3600, nullable=False)
