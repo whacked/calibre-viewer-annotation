@@ -3,15 +3,25 @@
 import json
 from model.annotator_model import Annotation, Range, session
 import socket
+import datetime
 
 CURRENT_USER_ID = unicode(socket.gethostname())
 
 __all__ = ["app", "store", "setup_app"]
 
+# to fix datetime json serialization
+# ref http://stackoverflow.com/questions/11875770/how-to-overcome-datetime-datetime-not-json-serializable-in-python
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return str(obj)
+        else:
+            return json.JSONEncoder.default(self, obj)
+
 # We define our own jsonify rather than using flask.jsonify because we wish
 # to jsonify arbitrary objects (e.g. index returns a list) rather than kwargs.
 def jsonify(obj, *args, **kwargs):
-    res = json.dumps(obj, indent=2)
+    res = json.dumps(obj, indent=2, cls=DateTimeEncoder)
     return res
 
 def unjsonify(str):
