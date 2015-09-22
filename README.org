@@ -2,7 +2,7 @@
 
 * adding annotation (read and write) capability to calibre's ebook-viewer
   
-  sporadic work in progress. last updated on 2014-11-14
+  sporadic work in progress. *last updated on 2015-09-21* and installed against =calibre (calibre 2.38)=
 
   [[./doc/img/ss-007.png]]
   
@@ -17,12 +17,22 @@
 * external dependencies
 
   - sqlalchemy
-  - [[http://elixir.ematia.de/trac/wiki][elixir]]
     
-  both should be installable via pip; due to *PATH HACK* below, we're
+  which should be installable via pip; due to *PATH HACK* below, we're
   assuming a system install where you know the inclusion path for both
   libraries
 
+** note on elixir
+
+   Previously [[https://pypi.python.org/pypi/Elixir/][elixir]] was an import dependency in this plugin, but
+   since development seems to have stagnated since late 2009 we have
+   issues like [[http://stackoverflow.com/questions/14201210/impossible-to-initialize-elixir][this one]] resulting from elixir being out of sync with
+   the latest sqlalchemy. As a result, *a clone of the entire elixir
+   library is included in this plugin*. It is a straight git clone
+   of https://github.com/jmg/elixir
+
+   In the future it's probably best to strip this dependency away.
+   
 * installing+using the plugin
 
   With calibre 2 this is considerably easier, but this plugin is *NOT*
@@ -31,16 +41,21 @@
 
   1. ensure you have a working development environment set up
   2. clone this repo
-  3. edit the *PATH HACK* =ViewerAnnotationPlugin/annotator_model.py=
-     so calibre is able to see your local install of =sqlalchemy= and
-     =elixir=. It is currently hard-coded to search in
-     =/usr/local/lib/python2.7/dist-packages=. There's probably a way
-     to make this self-contained but I don't know it.
+  3. edit the *PATH HACK*
+     =ViewerAnnotationPlugin/model/annotator_model.py= in the line
+     that follows the comment "CHANGE THIS". Leave the elixir path
+     alone for now.  This is to allow calibre to see your local
+     install of =sqlalchemy=. It is currently hard-coded
+     to search in =/usr/local/lib/python2.7/dist-packages=. There's
+     probably a way to make this self-contained but I don't know it.
+     [[http://www.mobileread.com/forums/showthread.php?t%3D241076][For now, this may be the simplest way to do it]]
   4. in your terminal/command line program, navigate to the
-     =ViewerAnnotationPlugin= directory and run =calibre-customize -b.=
-     to install the plugin. If successful your =ebook-viewer= should
-     incorporate the annotations. By default it will create a sqlite
-     database =ebook-viewer-annotation.db= into your home directory.
+     =ViewerAnnotationPlugin= directory and run =calibre-customize -b .=
+     to install the plugin. A successful installation should give
+     you the message =Plugin updated: Viewer Annotation Plugin (0, 0, 1)=.
+     If successful, your =ebook-viewer= should incorporate the
+     annotations. By default it will create a sqlite database
+     =ebook-viewer-annotation.db= into your home directory.
      
 * importing annotations
 
