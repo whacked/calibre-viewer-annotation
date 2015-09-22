@@ -1,0 +1,110 @@
+METATODO: move all of these to trac tickets!
+
+TODO
+====
+
+Website/doc related
+-------------------
+
+- extend the tutorial !!! (but we shouldn't duplicate the FAQ though)
+    - default values
+    - required fields
+    - multiple files (modules) models
+    - demonstrate common raltionships options (order_by, ...)
+    - inverse relationships matching (with a link to BehindTheScene)
+
+    ? autoload
+    ? many2many with intermediary object (extra fields in table) -> FAQ?
+      -> tags with created_by
+
+    ? transactions
+    ? table constraints
+    ? multi-thread
+    ? multi-database
+    ? deferred fields
+
+Code related
+------------
+
+- Besides, the current system also has another case I don't like: if the user
+  specifies an inverse (on one or both sides) but also set a table name on one
+  side (or two different table names), it will consider the relation as being
+  different even though the user explicitly told it was the same. This should
+  not happen. The system should rather throw an exception in that case. But
+  this last part should be easilty fixable, I think (it'a a matter of tweaking
+  the is_inverse method of the HasAndBelongsToMany class)...
+
+
+IDEAS
+=====
+
+The following items might or might not get implemented and probably need to be
+discussed before doing anything.
+
+- check that relations/fields setup with through kwargs endup with correct type
+  and cardinality (using a finalize method in HasField and Relationship)
+
+- provide optional __init__ kwargs validation (cfr. assignmapper) (as a
+  recipe)
+
+- provide optional "runtime setattr" validation (as a recipe?)
+  http://www.sqlalchemy.org/trac/attachment/ticket/547
+  * the provided "_find_class_descriptor" seem overly complex though
+  * the (unlikely?) case where a parent who is not inheriting from XFBase (or
+    Entity) defines a property will probably fail because of line 16.
+
+- add __revision__ (+ svn property) to all elixir files?
+
+- support all mapper arguments which take column arguments in a generic way
+
+- instead of linking the descriptor in the entity (cls._descriptor) we could
+  do it externally, like the mappers in SA. This would solve some of the
+  ugliness we have in the current implementation (mostly in target).
+
+- add polymorphic references
+  For the syntax, I'd like to have either belongs_to relationships
+  without of_kind argument or with a special "constant" argument like:
+    belongs_to('rel', of_kind=ANY_KIND)
+  Maybe this would be better suited on SA side or in an addon to Elixir and
+  not in the main lib?
+  The implementation would be a bit similar to what Jonathan does at:
+  http://cleverdevil.org/computing/52/making-a-statement-with-elixir
+  we would "just" need to generalize the target_id to support multi-column-pk
+  and I think we would be good to go for belongs_to relationships
+
+  The problem is to keep the referencial integrity of the database. Obviously
+  it's not possible to do that if people modify their data through SQL
+  directly (or at least it would involve complicated triggers on the DB and
+  that wouldn't be portable. It should be possible to do it through the ORM
+  though.
+  See:
+  http://www.sqlalchemy.org/trac/browser/sqlalchemy/trunk/examples/poly_assoc
+
+- investigate whether it would be possible to do a generic acts_as(xxx)
+  instead of the acts_as_taggable Jonathan demonstrated
+
+- support custom selectable on relationships, as is done at:
+
+  http://spyced.blogspot.com/2007/01/why-sqlalchemy-impresses-me.html
+  ie relations using any "selectable" instead of the normal object table.
+
+    mapper(User, users,
+        properties={
+           'orders': relation(mapper(Order, orders), order_by=orders.c.id),
+           'max_order': relation(mapper(Order, max_orders, non_primary=True),
+                                 uselist=False, viewonly=True),
+        })
+
+    would be something like:
+
+    # Order class must be defined before
+    max_orders_by_user = select([func.max(Order.c.order_id).label('order_id')],
+                                group_by=[Order.c.user_id]).alias('max_orders_by_user')
+    max_orders = Order.table.select(Order.c.order_id==max_orders_by_user.c.order_id).alias('max_orders')
+
+    class User(Entity):
+        has_one('max_order', of_kind='Order', selectable=max_orders)
+
+- get some inspiration from Django
+    symmetrical on M2M
+

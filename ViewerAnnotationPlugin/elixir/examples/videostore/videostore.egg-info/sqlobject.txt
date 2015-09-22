@@ -1,0 +1,2 @@
+db_module=videostore.model
+history_dir=$base/videostore/sqlobject-history

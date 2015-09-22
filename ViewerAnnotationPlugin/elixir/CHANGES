@@ -1,0 +1,505 @@
+0.8.0
+
+New features:
+- Better support for Python 3.x by running 2to3 within setup (patch by
+  "foogod", closes #110).
+- Added more tests for relationships to forward-declared entities.
+
+Changes:
+- Dropped support for python 2.3, SQLAlchemy 0.4 and deprecated stuff from
+  Elixir 0.7
+
+Bug fixes:
+- Fixed a few tests to work on SA 0.6.x
+- Fixed bad foreign key constraint generated for classes inheriting from a
+  class with multiple primary keys when using the "multi" inheritance.
+  Patch from & closes #114.
+
+0.7.1 - 2009-11-16
+
+New features:
+- Entities can now be declared "abstract" so that they do not create a table,
+  etc... This allows, among others, an entity to inherit from multiple abstract
+  classes (patch from Stéphane Klein, closes #89).
+- Added a new collection which can resolve entities relative to the current
+  entity, for example "..other_module.Class" (based on patches from Johannes
+  Janssen, closes #93).
+- Added a new entity option "resolve_root", which allows one to specify the
+  root module where your entities are defined. The string will be prepended
+  to all "absolute" entity paths. It can also be used on a per-entity basis.
+  This feature is based on a patch from Johannes Janssen, see #93.
+
+Changes:
+- using_options_defaults and using_table_options statements can be used several
+  times within the same class (closes #70).
+
+Bug fixes:
+- Fixed custom base classes and versioned extension when used with zope
+  interfaces (closes #98, patch from Valentin Lab)
+- Fixed having relationships in custom base classes (based on patch
+  by Stéphane Klein)
+
+0.7.0 - 2009-10-01
+
+Please see http://elixir.ematia.de/trac/wiki/Migrate06to07 for detailed
+upgrade notes. If you are upgrading an application with existing data from an
+earlier version of Elixir, you are STRONGLY ADVISED to read them!
+
+New features:
+- Added a new statement 'using_options_defaults' which can be used
+  on a custom base class to set default values for the options of all its
+  subclasses. For example, this makes it possible to have all classes
+  inheriting from your custom base class use some custom options without
+  having to set it individually on each entity, nor modify
+  options.options_defaults.
+- The local_colname and remote_colname arguments on ManyToMany relationships
+  can now also be used to set custom names for the ManyToMany table columns.
+  This effectively replace the column_format on ManyToMany relationships which
+  is now deprecated. Change based on a patch from Diez B. Roggisch.
+- Added (or rather fixed and documented) a "table" argument on ManyToMany
+  relationships to allow using a manually-defined Table (closes #44).
+- Added a "schema" argument on ManyToMany relationships to be able to create
+  the ManyToMany table in a custom schema and not necessarily the same schema
+  as the table of the "source" entity (patch from Diez B. Roggisch).
+- Added a "table_kwargs" argument on ManyToMany relationships to pass any
+  extra keyword arguments to the underlying Table object (closes #94).
+- Added a new "target_column" argument on ManyToOne relationships so that you
+  can target unique but non-primary key columns. At the moment, this only works
+  if the target column is declared before the ManyToOne (see ticket #26).
+- Added new "column_names" argument to the acts_as_versioned extension,
+  allowing to specify custom column names (inspired by a patch by
+  Alex Bodnaru).
+- Made M2MCOL_NAMEFORMAT option accept a callable, so that more complex naming
+  generation can be used if so desired.
+- Added two new extensions (contributed by Alex Bodnaru)
+  - "perform_ddl" allows to execute one or several DDL statements upon table
+    creation.
+  - "preload_data" allows to insert data into the entity table just after it
+    has been created.
+- EntityCollection gained a working extend method
+
+Changes:
+- Moved class instrumentation to a separate function: instrument_class
+- Moved all methods of the "Entity" base class, to the "EntityBase" class, so
+  that people who want to provide their own base class but don't want to loose
+  all the methods provided by "Entity" can simply inherit from EntityBase
+  instead of copy-pasting the code for all its methods.
+- Renamed remote_side and local_side ManyToMany arguments to remote_colname and
+  local_colname respectively to not collide with the remote_side argument
+  provided by SA (it doesn't make much sense on ManyToMany relationships but
+  still).
+- Delete Elixir properties in the setup phase rather than as soon as they are
+  attached to their class. It makes it possible to access them or refer to them
+  after the class is defined (but before setup).
+- Deprecated act_as_list extension in favor of SQLAlchemy's orderinglist
+  extension (closes #53).
+- Made manually defined mapper options take precedence over Elixir-generated
+  ones. Not very useful yet since most are expecting Column objects.
+- Default table_options (defined in options_defaults['table_options']) are now
+  also used for ManyToMany tables (closes #94).
+- Provide our own Session.mapper equivalent to avoid SQLAlchemy 0.5.5+
+  deprecation warning. This mapper autosave object instances on __init__ unless
+  save_on_init=False is passed as a mapper argument (closes #92).
+
+Bug fixes:
+- Fixed Elixir to work with the future SQLAlchemy 0.6 (trunk as of 6377).
+- Changed the pattern used by default to generate column names for
+  self-referencial ManyToMany relationships so that the meaning of
+  bidirectional self-referential relationships does not depend on the order of
+  declaration of each side (closes #69). See upgrade notes for details.
+- Changed slightly the pattern used to generate the name of the table for
+  bidirectional self-referential ManyToMany relationships so that it doesn't
+  depend on the order of declaration of each side (closes #19).
+  See upgrade notes for details.
+- default EntityCollection raise an exception instead of returning None when
+  trying to resolve an inexisting Entity from outside of another entity (for
+  example through EntityCollection.__getattr__
+- Fixed the case where you specify both "primaryjoin" and "colname" arguments
+  (useless in this case, but harmless) on a ManyToOne relationship of an
+  autoloaded entity.
+- Fixed bug which broke the "identity" (Entity) option
+- Fixed documentation about local_side and remote_side arguments being
+  required if the entity containing the relationship is autoloaded, when it is
+  only required if the relationship is self-referencial, and primaryjoin or
+  secondaryjoin as not been specified manually.
+- Added missing documentation for the "filter" argument on OneToMany
+  relationships.
+- Fixed the act_as_list extension's move_to_bottom method to work on MySQL
+  (closes #34).
+- Fixed event methods not being called when they are defined on a parent class.
+  (introduced in release 0.5.0).
+- Added workaround for an odd mod_python behavior (class.__module__ returns a
+  weird name which is not in sys.modules).
+- tablename, remote_colname, local_colname, schema and table_kwargs can now be
+  defined on either side of a ManyToMany relationship and will propagate to
+  the other side if that other side doesn't specify anything for that argument.
+  Also added an assertion to catch the case where the same/mirror
+  argument is specified on both sides but with different values.
+- Fixed filter argument on OneToMany relationship leaking the filter to the
+  unfiltered relationship.
+- Fixed encrypted extension to not encrypt several times an instance attributes
+  when that instance is flushed several times before being expunged from the
+  session.
+- Fixed using to_dict with a ManyToOne relationship in the "deep" set and that
+  relationship being None in the entity being converted.
+
+0.6.1 - 2008-08-18
+
+New features:
+- Allow ManyToOne relationships to use manually created fields as their
+  "supporting column". This means that the columns can be customized without
+  resorting to using the ugly "column_kwargs" (patch from Jason R. Coombs,
+  closes #39).
+- Extra args and kwargs to Synonym and ColumnProperty are forwarded to their
+  underlying constructs. This allows for example deferred ColumnProperties.
+- Added a more helpful assertion message when inverse relationship types don't
+  match.
+
+Changes:
+- Removed support for the deprecated "with_fields" syntax
+- Entity.__init__ calls Entity.set instead of duplicating its functionality
+
+Bug fixes:
+- Fixed the "Target resolves to several entities" exception message to actually
+  include the target name.
+- Renamed the on_reconstitute method decorator to reconstructor, to track the
+  corresponding change in SA's trunk.
+
+0.6.0 - 2008-07-18
+
+Please see http://elixir.ematia.de/trac/wiki/Migrate05to06 for detailed
+upgrade notes.
+
+New features:
+- Fields in a custom base class are added to all their children.
+- Added two new methods on the base entity: from_dict and to_dict, which can
+  be used to create (or output) a whole hierarchy of instances from (to) a
+  simple JSON-like dictionary notation (patch from Paul Johnston,
+  closes ticket #40).
+- Added experimental (!) support for concrete table inheritance (both
+  polymorphic or not). Concrete polymorphic inheritance requires SQLAlchemy
+  0.4.5 or later.
+- Moved the "entity to string" mapping and resolving code to the (newly
+  created) EntityCollection class (which stores lists of entities). This
+  allows one to provide a custom mapping method if needed. The default class
+  also overrides the __getattr__ method, providing and handy way to get at your
+  entities. See http://elixir.ematia.de/trac/browser/elixir/tags/0.6.0/tests/test_collections#L58
+- Added new "identity" option which can be used to set a custom polymorphic
+  identity for an entity. It also accepts a callable so that you can generate
+  the identity name automatically from the class itself.
+- Added __setattr__ method on Metaclass so that you can add properties
+  slightly more easily after class definition (but *before* setup_all):
+    class A(Entity):
+        pass
+    A.name = Field(String(32))
+- Added add_table_column, add_mapper_property and add_mapper_extension helper
+  methods in EntityBuilders.
+- Added full_tablename property on EntityDescriptor (includes schema name if
+  any).
+- Added on_reconstitute event/method decorator. Only works with SA 0.5.
+- Added support for viewonly relationships (OneToMany and OneToOne).
+- Added support for filtered OneToMany relationships. Produce viewonly
+  relations. See http://elixir.ematia.de/trac/browser/elixir/tags/0.6.0/tests/test_o2m.py
+  for an example.
+- Added support for callables for some arguments on relationships: primaryjoin,
+  secondaryjoin and remote_side. It means those can be evaluated at setup time
+  (when tables and their columns already exist) instead of definition time.
+
+Changes:
+- Default "target entity resolving code" changed slightly. It now uses a global
+  collection keyed on the entity name. This means that entities can refer to
+  other entities in a different module simply with the target entity name
+  instead of its full path. The full path is only required when there is an
+  ambiguity (ie when there are two classes with the same name in two different
+  modules). Closes #9.
+- Added support for SQLAlchemy 0.5, and dropped support for version 0.3 and
+  earlier.
+- The default session (elixir.session) uses sessionmaker() instead of
+  create_session(), which means it has now the following characteristics:
+    * autoflush=True
+    * autocommit=False (with SA 0.5 -- equivalent to transactional=True with
+      SA 0.4)
+    * autoexpire=True (with SA 0.5).
+- removed objectstore and other SA 0.3 (or older) support code.
+
+Bug fixes:
+- Fixed multi-table inheritance when using a non default schema (closes #38)
+- Fixed ManyToOne relationships using 'key' kwarg in their column_kwargs
+  (patch by Jason R. Coombs)
+- Fixed inheritance with autoloaded entities: when using autoload, we
+  shouldn't try to add columns to the table (closes tickets #41 and #43).
+- Fixed acts_as_list extension with autoloaded entities (patch from maqr,
+  closes ticket #52).
+- Fixed ColumnProperty to work with latest version of SQLAlchemy (O.4.5 and
+  later)
+- Fixed ManyToMany relationships when not using the default schema
+  (patch from Diez B. Roggisch, closes ticket #48)
+
+Misc:
+- Added AUTHORS list. If you are missing from this list, don't hesitate to
+  contact me.
+
+0.5.2 - 2008-03-28
+
+New features:
+- Added an optional `check_concurrency` keyword argument to the versioning
+  extension, supporting the usage of SQLAlchemy's built-in optimistic
+  concurrency check.
+
+Changes:
+- Made Elixir python 2.3 compatible again (based on patches from
+  Jason R. Coombs)
+
+Bug fixes:
+- Fixed act_as_list extension to work with DBMS that require subselects to be
+  aliased (patch by Alice McGregor)
+- Fixed the versioning extension so that the history table is updated within
+  the current transaction (patch from and closes ticket #35).
+
+0.5.1 - 2008-02-07
+
+New features:
+- Added a new elixir plugin for managing entities as (ordered) lists.
+- Added a `column_format` keyword argument to `ManyToMany` which can be used
+  to specify an alternate format string for column names in the mapping table.
+- Added support for custom base classes which inherit from another class (ie
+  not directly from object).
+- Added an alternate (nicer) syntax to define synonym properties.  This syntax
+  has a more limited scope, except that it can refer to properties defined in
+  a parent entity. This is based on a patch from Alexandre da Silva.
+
+Changes:
+- Added check so that using an inexisting column in an order_by or other
+  column-name based argument raises an exception.
+- The polymorphic_identity kwarg in using_mapper_options is not overriden
+  anymore by the one generated by Elixir (patch from Ben Bangert).
+- Moved the format of the multi-table inheritance column to a constant in
+  options (so that it can be changed globally).
+- The foreign key constraint of the column in a multi-table inheritance is
+  configured with a cascade rule.
+
+Bug fixes:
+- A child entity doesn't inherit anymore its parent entity statements (such as
+  options) if it doesn't use any statement itself.
+- Made inheritance work for custom base classes (closes #25).
+- Fixed the inverse relationship matching when the inverse relationship is
+  defined in a parent Entity (thanks to Alexandre da Silva).
+- Fixed bug in setup_entities (it always used the global entity list and not
+  the list given as argument).
+- Fixed the versioning extension not appropriately handling versioned
+  entities with onupdate events (patch from Remi Jolin, closes #29).
+- Fixed videostore example (patch from Jason R. Coombs, closes #31).
+
+0.5.0 - 2007-12-08
+
+Please see http://elixir.ematia.de/trac/wiki/Migrate04to05 for detailed
+upgrade notes.
+
+New features:
+- Added set method on base Entity (set attributes using kwargs)
+
+Changes:
+- Autosetup defaults to False ! (please look at those upgrade notes!)
+- Polymorphic defaults to True (inheritance is polymorphic by default).
+- Removed one of the autosetup triggers altogether: there is no "fake" mapper
+  registered in SQLAlchemy's mapper_registry anymore, so if you try to
+  access the class mapper directly (not through the 'mapper' attribute on
+  the class), before the setup phase happens, it won't work. This was done
+  because of a change in SQLAlchemy trunk (future SA 0.4.2) which broke that
+  piece of code (and prevented to use autosetup at all). Since that code
+  was a hack in the first place, instead of doing some even uglier hackery,
+  I got rid of it altogether.
+- Moved some format strings to constants in options, so that one can change
+  them if he wants to.
+- Allow overriding primary_key columns on autoloaded entities (closes tickets
+  #20 and #22)
+- Columns created by ManyToOne relationships can now optionally (through
+  column_kwargs) *not* create an index (ie it's not harcoded anymore).
+  Suggestion by Jason R. Coombs.
+
+Bug fixes:
+- Fixed a nasty bug which prevented inheritance to work correctly when using
+  the attribute syntax in many cases.
+- Fixed associable extension to work with SQLAlchemy trunk (future 0.4.2).
+- Fixed an incompatibility with zope.interfaces.
+- Tweaked the initialization sequence again (in fact revert an older change)
+  which prevented to reuse class properties of one class in other (subsequent)
+  classes.
+- Fixed our tests to work with SA trunk (future 0.4.2) (unicode data + use of
+  deprecated attributes)
+
+0.4.0 - 2007-10-29
+
+Please see http://elixir.ematia.de/trac/wiki/Migrate03to04 for detailed
+upgrade notes.
+
+New features:
+- Implemented a new syntax to declare fields and relationships, much closer to
+  what is found in other Python ORM's. The with_fields syntax is now
+  deprecated in favor of a that new syntax. The old statement based (has_field
+  et al.) syntax is still available though (and will remain so for quite some
+  time). This was done with help from a patch by Adam Gomaa.
+- Implemented polymorphic single-table inheritance as well as polymorphic and
+  non-polymorphic multi-table (aka joined table) inheritance.
+- Added ext sub-package for additional Elixir statements.
+- Added associable extension for generating polymorphic associations with
+  Elixir statements.
+- Added versioning extension to keep track to all changes to your entities by
+  storing them in a secondary table.
+- Added encryption extenstion to encrypt/decrypt some fields data on the fly
+  when writing to/reading from the database.
+- Added support for synonym properties.
+- Added shortcut syntax to define column_properties.
+- Added a .query attribute on all entities. The old .query() syntax is still
+  available.
+- Added support to add any SQLAlchemy property on your mapper, through the
+  GenericProperty class (as well as the has_property statement). These can
+  work even if they rely on the entity columns (an thus need them to be
+  defined before the property can be declared). See tests/test_properties.py
+  for examples.
+- Added support for "manual session management" (ie you can now define an
+  entity with "using_options(session=None)" and it won't use any
+  SessionContext extension, nor receive the "query" attribute.
+- Made the statement system more powerfull.
+
+Changes:
+- The setup time was changed. That is the table and mapper are not created as
+  soon as the class is defined, but rather when first used, or when explicitly
+  calling the setup function (recommended). This also allowed us to reorder
+  the setup process and allows, among others to use a ManyToOne-generated
+  column as a primary key, to use unique constraints on those columns, to
+  order by those columns and so on...
+- Made Elixir work with both SQLAlchemy 0.4 and 0.3.10 (with help from a patch
+  by Ants Aasma).
+- Moved away from assign_mapper, now all assign_mapper-provided methods are on
+  the Entity class. Now, if people don't like them, they have the option to
+  simply provide another base class.
+- Default objectstore is now a ScopedSession when working on SQLAlchemy 0.4.
+  It means that it's not wrapped in an Objectstore object at all. This means,
+  that depending on the version of SA you are using, you'll get a slightly
+  different behavior.
+- Relationships to other classes can now also be defined using the classes
+  themselves in addition to the class namees. Obviously, this doesn't work for
+  forward references.
+- Classes defined inside a function can now have relationships to each other.
+- Added default __init__ method on entities so that subclasses can override it
+  and still have the "set attribute by keyword" behavior by calling super()
+- Added "through" and "via" keyword arguments on relationships and has_field
+  statement, to proxy values through relationships (uses association_proxy)
+- Made EntityMeta public, so that people can actually define their own base
+  class.
+- Changed the order of relationship kwargs processing so that computed kwargs
+  can be overridden by kwargs manually passed to the statement. This should
+  only be used if you know what you are doing.
+- Added onupdate kwarg to BelongsTo relationships for consistency with the
+  ondelete kwarg
+- Added ondelete and onupdate kwargs for use with has_and_belongs_to_many
+  to apply on delete clauses to foreign key constraints on the m2m table.
+- Columns of the intermediary table of an has_and_belongs_to_many relationship
+  are now marked as primary keys.
+- Reworked how entities look for primary keys on related entities. This
+  enables one "normal" entity (fully defined in Elixir) to refer to an entity
+  which is autoloaded.
+- Added translation (from column name to column object) of the primary_key
+  mapper option so that it can actually be used. This allows to have entities
+  without any primary key defined at the table level.
+- Added the possibility to give a custom name for ManyToOne constraints
+  (patch from and closes ticket #16)
+- Dropped support for the old threadlocal SA extension (which doesn't even exist
+  anymore in SA 0.4)
+
+Bug fixes:
+- Reworked/cleaned tests so that they don't leak stuff to other tests (both at
+  the method level and module level) anymore. Uses nosetest's module level
+  fixture.
+- Fixed relationships to entities whose primary_key field has been defined
+  with a "key" argument (based on a patch by Paul Johnston).
+- Fixed some buggy tests.
+- Fixed relationships to tables using a schema (patch by Neil Blakey-Milner)
+- Made inverse relationships use backrefs. This fixes the "bidirectional
+  coherency" problem some people had before doing a flush. (based on a patch
+  from Remi Jolin).
+
+0.3.0 - 2007-03-27
+- Made the provided metadata not threadlocal. This could break things for you
+  in some rare case. Please see the (newly created) FAQ file for details about
+  this.
+- Added support for autoloading/reflecting databases with
+  has_and_belongs_to_many relationships. The tablename argument is now
+  optional, but still recommended, otherwise you'll have to use the same exact
+  name for your intermediary table than the one generated. You also _have to_
+  specify at least one of either local_side or remote_side argument.
+- Added support for the "version_id_col" option on entities. This option adds
+  a column to the table which will be used to prevent concurrent modifications
+  on any row of the entity's table (i.e. it will raise an error if it happens).
+- Made the colname argument optional for belongs_to relationships in
+  autoloaded entities. It is only required to specify it if you have several
+  belongs_to relationships between two entities/tables.
+- Applied patch from "Wavy" so that columns of a table are in the same order
+  as they were declared (this only works for the has_field statement).
+- Applied patch from Isaac Csandl to add an "ondelete" argument to
+  belongs_to relationships. The content of that argument is forwarded to the
+  foreign key constraint.
+- Foreign key names generated by belongs_to relationships use column names
+  instead of relation names in case we have a relation with the same name
+  defined in several entities inheriting from the same entity using single-
+  table inheritance (and we set a custom column name in one of them to avoid
+  a column-name conflict).
+- Using invalid options on entities will now raise an exception
+- Added __version__
+- Use an explicit metaclass for entities, so that people can define their own
+  base class.
+- Changed the approach to reflecting/autoloading belongs_to relationships.
+  This shouldn't change anything to how it's used but allowed me to factor
+  some code with has_and_belongs_to_many relationships.
+- The tablename option can now be given a callable so that people can provide
+  their own function to get the table name for an entity. The tablename option
+  can now also be set globally (using the options_defaults dictionary). Of
+  course, this only makes sense for the callable usecase.
+
+- Fixed bug preventing having entities without any statement.
+- Fixed documentation for belongs_to relationships (the arguemnt is "required",
+  not "nullable").
+- Fixed typo which broke the use_alter argument on belongs_to relationships.
+- Fixed inheritance unit test to pass SQLAlchemy type check on relations
+  (introduced in SA 0.3.6)
+- Fixed wrong field length in autoload test (it was not noticeable with sqlite).
+- Actually make the code python 2.3 compatible (Robin's patch was based on
+  0.1.0 while I had introduced more decorators in the trunk in the mean time).
+
+- Made some PEP8 tweaks in many places. Used the pep8 script provided with
+  Cheesecake.
+- Some cleanup/useless code removal
+
+0.2.0 - 2007-02-28
+- Applied patch from Robin Munn to make the code python 2.3 compatible
+- Per a suggestion on the mailing list, look at the calling stack frame to
+  ensure that we apply statements to the proper class.  We now attach the
+  statement list to the class itself, rather than attaching it to a global
+  list that is neither threadsafe, nor safe when doing nested class
+  definition.  Also added a test to validate that this works.
+- implemented singletable non-polymorphic inheritance
+- added support to pass non-keyword arguments to tables. You just pass
+  them to the using_table_options statement and they will be forwarded to the
+  table along with the keyword arguments. This can be used to set table
+  constraints.
+- added support for deferred columns (use the "deferred" keyword argument on
+  fields)
+- added a "required" keyword argument on fields and BelongsTo
+  relationships. This is the opposite of the "nullable" SA argument.
+- added a "column_kwargs" keyword argument to BelongsTo relationships
+  to forward any keyword argument directly to the SA Column.
+- added support for the use_alter and constraint_kwargs kwargs on BelongsTo
+  relationships (forwarded to SA ForeignKeyConstraint).
+    -> removed the systematic use_alter on BelongsTo relations since it
+       can now be specified only when needed.
+    -> removed it from HasAndBelongsToMany relations, since I think a
+       circular foreign key dependency can't happen with those relations.
+- fixed foreign key names on MySQL (and possibly other) databases by
+  making sure the generated name is unique for the whole database, and not
+  only for the table on which it applies.
+- corrected some docstrings
+
+0.1.0 - 2007-02-12
+initial release
+

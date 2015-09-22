@@ -1,0 +1,36 @@
+How to make a release:
+
+- svn up
+- change version in CHANGES, add release date and link to upgrade notes if any
+- change version in __version__ (elixir/__init__.py)
+- change version in setup.py
+- change version in setup.cfg (trac link)
+- make sure API doc generates properly: apydia -v -c setup.cfg
+- commit
+
+- make tag in subversion
+    "svn copy http://elixir.ematia.de/svn/elixir/trunk
+              http://elixir.ematia.de/svn/elixir/tags/%s" % version
+
+- build tar.gz, egg for 2.4 and 2.5 and send them to pypi.
+  On my system (Unbuntu gutsy):
+    python2.4 setup.py egg_info -RDb "" register bdist_egg upload
+    python2.5 setup.py egg_info -RDb "" sdist bdist_egg upload
+
+  or, you could also set an alias up like this:
+    python setup.py alias -u release egg_info -RDb ""
+
+  On older systems, you might need to upload the files manually to Pypi.
+
+- add version to the trac, mark milestone as completed
+
+- announce release on our news page (link to CHANGES)
+
+- announce release on those lists:
+    - Elixir <sqlelixir@googlegroups.com>
+    - SQLAlchemy <sqlalchemy@googlegroups.com>
+    - TurboGears <turbogears@googlegroups.com>
+    - Python announce <python-announce-list@python.org>
+
+- announce it on freshmeat
+
