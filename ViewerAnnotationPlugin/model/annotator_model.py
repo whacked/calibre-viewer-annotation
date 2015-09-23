@@ -7,14 +7,16 @@
 # don't know how to bundle them nicely inside the plugin directory alone.
 import os, sys
 import os.path as _p
-sys.path.insert(0, os.getcwd())
 
 # CHANGE THIS:
 sys.path.insert(0, _p.expanduser("/usr/lib/python2.7/dist-packages")) # for elixir
-# </path_hack>
 
 # attempt to force preference of the local elixir
-sys.path.insert(0, _p.join(os.getcwd(), 'elixir'))
+# this is for local testing
+sys.path.insert(0, _p.join(_p.dirname(_p.abspath(__file__)), 'elixir'))
+# this is for calibre
+sys.path.insert(0, 'ViewerAnnotationPlugin/elixir')
+# </path_hack>
 
 import datetime
 import sqlalchemy
