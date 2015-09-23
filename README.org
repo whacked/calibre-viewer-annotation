@@ -56,6 +56,12 @@
      If successful, your =ebook-viewer= should incorporate the
      annotations. By default it will create a sqlite database
      =ebook-viewer-annotation.db= into your home directory.
+
+** troubleshooting the installation
+
+    if you are getting errors during the dev/install cycle, calibre may not be 
+    properly reinstalling the plugin /if you have installed a broken one/. In
+    this case, try running =calibre-customize -r 'Viewer Annotation Plugin'=
      
 * importing annotations
 
