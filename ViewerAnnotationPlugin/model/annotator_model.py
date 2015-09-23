@@ -7,12 +7,14 @@
 # don't know how to bundle them nicely inside the plugin directory alone.
 import os, sys
 import os.path as _p
-sys.path.append(os.getcwd())
-sys.path.insert(0, _p.join(os.getcwd(), 'elixir'))
+sys.path.insert(0, os.getcwd())
 
 # CHANGE THIS:
 sys.path.insert(0, _p.expanduser("/usr/lib/python2.7/dist-packages")) # for elixir
 # </path_hack>
+
+# attempt to force preference of the local elixir
+sys.path.insert(0, _p.join(os.getcwd(), 'elixir'))
 
 import datetime
 import sqlalchemy
