@@ -18,7 +18,12 @@ sys.path.insert(0, _p.join(os.getcwd(), 'elixir'))
 
 import datetime
 import sqlalchemy
-from elixir import *
+from elixir import \
+        session, metadata, setup_all, \
+        Entity, Field, using_options, \
+        OneToMany, ManyToOne, \
+        Integer, DateTime, \
+        UnicodeText, Unicode, String
 import json
 
 def setup_in_memory():
