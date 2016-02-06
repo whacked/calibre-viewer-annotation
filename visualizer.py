@@ -145,7 +145,7 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
         good0 = testtxt.index(realtarget)
         good1 = testtxt.index(realtarget) + len(realtarget)
 
-    if False:
+    if True:
         testtxt = """
         we are the best the best, the the the best!
         """.strip()
@@ -157,7 +157,7 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
         out.append(run_apply_demo(anc, testtxt))
 
     ## test word scoring method
-    if False:
+    if True:
         for word in """
         test
         easy
@@ -168,7 +168,7 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
         zenith
         the
         """.strip().split():
-            out.append('%s %s' % (word, get_word_score(word)))
+            out.append('%s %s' % (word, at.get_word_score(word)))
 
     return ''.join(box(text) for text in out)
 
