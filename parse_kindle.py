@@ -25,6 +25,10 @@ Add a note
 
     the BOOK_FILE is an epub. Currently I am testing with an epub converted using calibre.
 
+
+for kindle highlights yml,
+    according to http://www.amazon.com/forum/kindle?_encoding=UTF8&cdForum=Fx1D7SY3BVSESG&cdThread=Tx2LHN7MUWM4WV0
+    the 'location' is a unit of 128 bytes of data
 """
 
 import sys
