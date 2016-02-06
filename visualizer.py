@@ -40,6 +40,7 @@ def index():
 
     return render_template_string('''
 <style>
+/* text diff styling */
 div.box {
     width: 600px;
     border: 1px solid gray;
@@ -111,7 +112,44 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
     document_text_list = map(str.strip, document_text_list)
     highlighted_text = "this is the real target text" # we want 2
 
-    out = []
+    out = ['''\
+
+<style>
+.approx {
+    color:purple;
+}
+.applied {
+    color:red;
+}
+
+/* anchor styling */
+div.anchor-info * {
+    margin-left: 8em;
+    padding-left: 0.5em;
+    border-left: 1px solid gray;
+    border-top: 1px solid gray;
+}
+span.approx-offset {
+    float: left;
+    margin: 0;
+    background: aqua;
+    border: 1px solid blue;
+}
+span.relative-offset {
+    float: left;
+    margin: 0;
+    background: red;
+    border: 1px solid black;
+}
+
+span.marker {
+    font-size: x-small;
+}
+</style> 
+            
+            ''',
+            
+            ]
 
     def box(text):
         return '''<div style="border:1px solid black;margin:0.5em;font-family:monospace;">%s</div>''' % text
@@ -122,43 +160,102 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
         idx = at.apply_anchor(anchor, text)
         return text[:idx] + colored(text[idx:idx+len(anchor.token)], "orange", attrs=["bold"]) + text[idx+len(anchor.token):]
 
-    if True:
-        import random
 
-        offset_begin = 310
-        testtxt = document_text_list[2]
-        ra0, ra1 = at.make_anchor_range(highlighted_text, offset_begin, 2, document_text_list)
+    def render_anchor(anc):
+        rtn = [
+        '<div class="anchor-info">']
+        rtn.append('''\
+        <span class="approx-offset">%(approximate_offset)s</span>
+        <span class="relative-offset">%(relative_offset)s</span>
+        <div class="anchor-token">
+        %(token)s
+        </div>
+        ''' % anc.__dict__)
+        if anc.support_anchor_list:
+            rtn.append('<div>supported by:</div>')
+            for support in anc.support_anchor_list:
+                rtn.append(render_anchor(support))
 
-        anc = at.make_anchor(highlighted_text, offset_begin, 2, document_text_list)
-        out.append('<pre>'+str(anc)+'</pre>')
+        rtn.append('</div>')
+        return ''.join(rtn)
 
-        anc.support_anchor_list = []
-        ## screw up the offset; this should break the quick and dirty version
-        out.append(run_apply_demo(anc, ("blah " * 40) + "bleh bleh bleh this is the real target text 1 " + testtxt))
+    # demo 1
+    import random
 
-        testtxt = testtxt.replace(random.choice(ra0.support_anchor_list).token, '')
-        idx0, idx1 = at.apply_anchor_range(ra0, ra1, testtxt)
+    offset_begin = 310
+    testtxt = document_text_list[2]
+    ra0, ra1 = at.make_anchor_range(highlighted_text, offset_begin, 2, document_text_list)
 
-        out.append(testtxt[:idx0] + colored(testtxt[idx0:idx1], "orange", attrs=["bold"]) + testtxt[idx1:])
+    anc = at.make_anchor(highlighted_text, offset_begin, 2, document_text_list)
+    out.append(render_anchor(anc))
 
-        realtarget = highlighted_text + " 2"
-        good0 = testtxt.index(realtarget)
-        good1 = testtxt.index(realtarget) + len(realtarget)
+    anc.support_anchor_list = []
+    ## screw up the offset; this should break the quick and dirty version
+    out.append(run_apply_demo(anc, ("blah " * 40) + "bleh bleh bleh this is the real target text 1 " + testtxt))
 
-    if True:
-        testtxt = """
-        we are the best the best, the the the best!
-        """.strip()
-        anc = at.Anchor()
-        anc.token = "the"
-        anc.approximate_offset = 18
-        idx = at.apply_anchor(anc, testtxt)
+    testtxt = testtxt.replace(random.choice(ra0.support_anchor_list).token, '')
+    idx0, idx1 = at.apply_anchor_range(ra0, ra1, testtxt)
 
-        out.append(run_apply_demo(anc, testtxt))
+    out.append(testtxt[:idx0] + colored(testtxt[idx0:idx1], "orange", attrs=["bold"]) + testtxt[idx1:])
+
+    realtarget = highlighted_text + " 2"
+    good0 = testtxt.index(realtarget)
+    good1 = testtxt.index(realtarget) + len(realtarget)
+
+    # demo 2
+    testtxt = """
+    we are the best the best, the the the best!
+    """.strip()
+    anc = at.Anchor()
+    anc.token = "the"
+    anc.approximate_offset = 18
+    actual_idx = at.apply_anchor(anc, testtxt)
+
+    marked_text = testtxt.strip()
+    dpostproc = {}
+    dpostproc[anc.approximate_offset] = '<sup class="approx">?</sup>'
+    dpostproc[actual_idx] = '<sup class="applied">!</sup>'
+    for i in reversed(sorted(dpostproc.keys())):
+        marked_text = marked_text[:i] + dpostproc[i] + marked_text[i:]
+
+    out.append('''
+    <div>
+    <h4>test simple anchor application</h4>
+
+    approximate offset: <span class="approx">%(approx_offset)s</span>
+    <br />
+    applied offset: <span class="applied">%(applied_offset)s</span>
+    <br />
+
+    <div>
+        <b>locate attempt:</b>
+        <div>%(attempt)s</div>
+    </div>
+    <div>
+        <b>rendered:</b>
+        <div>%(rendered)s</div>
+    </div>
+    </div>
+    ''' % dict(
+        approx_offset = anc.approximate_offset,
+        applied_offset = actual_idx,
+        rendered = run_apply_demo(anc, testtxt),
+        attempt = marked_text,
+    ))
+
 
     ## test word scoring method
-    if True:
-        for word in """
+    out.append('''\
+    <div>
+    <h4>test word scoring</h4>
+    <ul>
+    %s
+    </ul>
+    </div>
+    '''%(''.join(
+        '<li>%.2f %s</li>' % (at.get_word_score(word), word)
+        for word in
+        '''
         test
         easy
         think
@@ -167,8 +264,8 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
         queen
         zenith
         the
-        """.strip().split():
-            out.append('%s %s' % (word, at.get_word_score(word)))
+        '''.strip().split()
+    )))
 
     return ''.join(box(text) for text in out)
 
