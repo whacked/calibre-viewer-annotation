@@ -10,5 +10,6 @@ else
     export LD_LIBRARY_PATH=$([ -n "$LD_LIBRARY_PATH" ] && echo "$HERE:$HERE/lib:$LD_LIBRARY_PATH" || echo "$HERE:$HERE/lib")
     echo $LD_LIBRARY_PATH
 
-    exec -a "$0" "/opt/node-webkit-v0.11.1-linux-x64/nw" . "$@"
+    #exec -a "$0" "/opt/node-webkit-v0.11.1-linux-x64/nw" . "$@"
+    nw $@
 fi
