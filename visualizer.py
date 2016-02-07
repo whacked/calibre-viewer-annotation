@@ -19,6 +19,7 @@ reload(tp)
 
 
 
+cur_doc_idx = 2
 document_text_list = [
             """
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. 
@@ -300,8 +301,6 @@ sup {
     # demo 1
     import random
 
-    cur_doc_idx = 2
-
     offset_begin = 310
     testtxt = document_text_list[cur_doc_idx]
     ra0, ra1 = at.make_anchor_range(highlighted_text, offset_begin, cur_doc_idx, document_text_list)
@@ -351,7 +350,7 @@ sup {
         ),
     ))
 
-    realtarget = highlighted_text + " 2"
+    realtarget = highlighted_text + " %s" % cur_doc_idx
     good0 = testtxt.index(realtarget)
     good1 = testtxt.index(realtarget) + len(realtarget)
     out.append('''\
@@ -431,7 +430,7 @@ sup {
 @app.route('/annotate')
 def annotate():
     ctx = EasyDict()
-    ctx.text = document_text_list[2]
+    ctx.text = document_text_list[cur_doc_idx]
 
     return render_template('annotate.html', **ctx)
 
