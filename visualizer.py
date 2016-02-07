@@ -114,6 +114,72 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
 
     out = ['''\
 
+<pre>
+commentary:
+
+aqua = approx offset
+red = relative offset
+
+at the top level we are given an 'anchor' that corresponds to some part of a
+document.  in practice, this is a highlight we want to save.
+
+for the highlighted text, there is no other reference to which we can derive
+the highlight's location, hence relative offset is None, and absolute offset is
+the character-by-character offset from the start of the document where we
+assume the highlight is found.
+
+if the highlight is unique, we expect to be able to locate it within the
+document even if some parts of the document get degraded. Even if the highlight
+itself gets degraded in the original document, it is possible to do a fuzzy
+substring search and find it, without the offset recorded.
+
+if the highlight is NOT unique, AND the document AND the highlight are somehow
+degraded (within limits), we want to rely on alternative methods to locate the
+best guess of where the highlight should be. a real-life use case is if one was
+proofreading a document, makes a highlight using an external annotation
+storage, and makes corrections to the original text that the highlight
+included.
+
+for this use case, we will use text anchors.
+
+general idea for creating anchors:
+
+1. for each document, compile a ranking of words with highest information
+value; call these "support words". we assume the high valued words are less
+likely to get degraded, or when degraded, will still be sufficiently unique [1]
+
+2. for each word within the highlighted string (or just the entire highlighted
+string), find the 6 best support words, where best is a scoring based on
+maximizing the support's information value and minimizing the distance between
+the highlight's word and the support word.
+
+general idea for applying anchors:
+
+1. when given an anchor and its associated support information, locate the
+support words within the document. Support should be deemed located if
+sufficiently close to its specified within-document relative offset and
+sufficiently similar to the origina support word (also see [1]).
+
+2. locate the most similar word to the word in the highlight, similar based on
+string similarity and minimization of both the initial encoded
+document-relative offset (approx offset), and the support-relative offset
+(relative offset).
+
+3. repeat 1~2 for each of the words in the highlight string; if no hit is
+found, use the majority of matches from other words in the highlight string to
+make a final decision; for some threshold, we will assume failure, and the
+highlight has been deleted.
+
+
+[1] current implementation does not handle degradataion of support words. but
+    one possible implementation is to re-compile the support word ranking list
+    for the document every time, and when given a support word, find the most
+    similar
+</pre>
+
+
+
+
 <style>
 .approx {
     color:purple;
