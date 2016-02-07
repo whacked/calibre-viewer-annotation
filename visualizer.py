@@ -446,15 +446,30 @@ AStore.setup_in_file('sqlite:///test.db')
 @app.route('/annotation')
 def annotation():
     ctx = EasyDict()
-    asdf
-    annot_resultset = json.loads(AStore.search_annotations(
-        #uri = "epub://" + href,
-        #title = self.book_title,
-        title = '%',
+    ctx.resultset = json.loads(AStore.search_annotations(
+        all_fields = True,
     ))
-    print AModel.Annotation.query.all()
-    print annot_resultset
     return render_template_string('''\
+<table>
+{% set klist = ['id', 'title', 'uri', 'ranges', 'text'] %}
+<tr>
+{% for k in klist %}
+<th>{{ k }}</th>
+{% endfor %}
+</tr>
+
+{% for ann in resultset['rows'] %}
+<tr>
+
+{% for k in klist %}
+<td>
+{{ ann[k] }}
+</td>
+{% endfor %}
+
+</tr>
+{% endfor %}
+</table>
 ''', **ctx)
 
 
