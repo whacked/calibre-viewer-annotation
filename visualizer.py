@@ -12,6 +12,7 @@ from easydict import EasyDict
 
 
 import textproc as tp
+import json
 
 reload(at)
 reload(tp)
@@ -433,6 +434,31 @@ def annotate():
     ctx.text = document_text_list[2]
 
     return render_template('annotate.html', **ctx)
+
+
+import sys
+sys.path.insert(0, 'ViewerAnnotationPlugin')
+sys.path.insert(0, 'ViewerAnnotationPlugin/elixir')
+import annotator_store as AStore
+import annotator_model as AModel
+
+AModel.metadata.bind = 'sqlite:///test.db'
+AModel.setup_all(True)
+
+@app.route('/annotation')
+def annotation():
+    ctx = EasyDict()
+    asdf
+    annot_resultset = json.loads(AStore.search_annotations(
+        #uri = "epub://" + href,
+        #title = self.book_title,
+        title = '%',
+    ))
+    print AModel.Annotation.query.all()
+    print annot_resultset
+    return render_template_string('''\
+''', **ctx)
+
 
 
 
