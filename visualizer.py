@@ -37,6 +37,7 @@ Vestibulum sapien. Proin quam. Etiam ultrices. Suspendisse in justo eu magna luc
 Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincidunt malesuada tellus. Ut ultrices ultrices enim. Curabitur sit amet mauris. Morbi in dui quis est pulvinar ullamcorper. Nulla facilisi. Integer lacinia sollicitudin massa. Cras metus. Sed aliquet risus a tortor. Integer id quam. Morbi mi. 
             """,
 ]
+document_text_list = map(str.strip, document_text_list)
 
 
 
@@ -113,7 +114,6 @@ def anchortext():
 
 
 
-    document_text_list = map(str.strip, document_text_list)
     highlighted_text = "this is the real target text" # we want 2
 
     out = ['''\
