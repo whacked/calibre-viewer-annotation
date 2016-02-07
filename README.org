@@ -81,7 +81,7 @@
    the models expect tables:
    - annotation :: stores the annotation text, user, and other data (ref [[http://docs.annotatorjs.org/en/v1.2.x/annotation-format.html][official annotation format]])
    - range :: stores simple start/end offsets and xpath information
-   - consumer :: currently unused
+   - consumer :: currently unused (usage is documented under [[http://docs.annotatorjs.org/en/v1.2.x/authentication.html][authentication]])
    
 ** okfn/annotator files
 
