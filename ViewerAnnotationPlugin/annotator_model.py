@@ -29,9 +29,18 @@ class Annotation(Base, DBMixin):
 
     id     = Column(Integer, primary_key=True)
     uri    = Column(Text)
+
+    # title of the book
     title  = Column(Text)
+
+    # any text attached to the annotation via the textarea input
     text   = Column(Text)
     user   = Column(Text)
+
+    # TODO FIXME
+    # add field corresponding to `quote` from annotator 1.2.x
+    # what is the `highlights` field in annotator?
+
     extras = Column(Text, default=u'{}')
     timestamp = Column(DateTime, default=datetime.datetime.now)
 
