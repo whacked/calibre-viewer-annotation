@@ -121,6 +121,12 @@ Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincid
 .applied {
     color:red;
 }
+.begin {
+    color:lightblue;
+}
+.end {
+    color:darkblue;
+}
 
 /* anchor styling */
 div.anchor-info * {
@@ -145,6 +151,11 @@ span.relative-offset {
 span.marker {
     font-size: x-small;
 }
+
+sup {
+    background: #EEE;
+    border-radius: 3px;
+}
 </style> 
             
             ''',
@@ -159,6 +170,27 @@ span.marker {
     def run_apply_demo(anchor, text):
         idx = at.apply_anchor(anchor, text)
         return text[:idx] + colored(text[idx:idx+len(anchor.token)], "orange", attrs=["bold"]) + text[idx+len(anchor.token):]
+
+    def apply_dmarker(text, dmarker):
+        '''
+        take a (str)text and a (dict)dmarker,
+        where dmarker is of (int)offset : (str)marker
+        where marker the css marker class
+
+        and return a (str) where markers are inserted into the offsets
+        '''
+        dsymbol = {
+            'approx': '?',
+            'applied': '!',
+            'begin': '&lt;&lt;',
+            'end': '&gt;&gt;',
+        }
+
+        marked_text = text
+        for i in reversed(sorted(dmarker.keys())):
+            marker_type = dmarker[i]
+            marked_text = marked_text[:i] + '<sup class="%s">%s</sup>'%(marker_type, dsymbol.get(marker_type, '#')) + marked_text[i:]
+        return marked_text
 
 
     def render_anchor(anc):
@@ -182,25 +214,48 @@ span.marker {
     # demo 1
     import random
 
-    offset_begin = 310
-    testtxt = document_text_list[2]
-    ra0, ra1 = at.make_anchor_range(highlighted_text, offset_begin, 2, document_text_list)
+    cur_doc_idx = 2
 
-    anc = at.make_anchor(highlighted_text, offset_begin, 2, document_text_list)
+    offset_begin = 310
+    testtxt = document_text_list[cur_doc_idx]
+    ra0, ra1 = at.make_anchor_range(highlighted_text, offset_begin, cur_doc_idx, document_text_list)
+
+    anc = at.make_anchor(highlighted_text, offset_begin, cur_doc_idx, document_text_list)
     out.append(render_anchor(anc))
 
     anc.support_anchor_list = []
     ## screw up the offset; this should break the quick and dirty version
-    out.append(run_apply_demo(anc, ("blah " * 40) + "bleh bleh bleh this is the real target text 1 " + testtxt))
+    out.append('''\
+    <h4>break offset</h4>
+    %s
+    ''' % run_apply_demo(anc, ("blah " * 40) + "bleh bleh bleh this is the real target text 1 " + testtxt))
 
-    testtxt = testtxt.replace(random.choice(ra0.support_anchor_list).token, '')
+    placeholder = '___'
+    to_degrade = random.choice(ra0.support_anchor_list).token
+    idx0_degrade = testtxt.index(to_degrade)
+    idx1_degrade = idx0_degrade + len(to_degrade)
+    testtxt = testtxt.replace(to_degrade, placeholder)
     idx0, idx1 = at.apply_anchor_range(ra0, ra1, testtxt)
 
-    out.append(testtxt[:idx0] + colored(testtxt[idx0:idx1], "orange", attrs=["bold"]) + testtxt[idx1:])
+    out.append('''\
+    <h4>rendered version of anchor applied to text with 1 anchor degradation (%s)</h4>
+    %s
+    ''' % (
+        to_degrade,
+        (testtxt[:idx0] + colored(testtxt[idx0:idx1], "orange", attrs=["bold"]) + testtxt[idx1:]).replace(
+            placeholder, '<span style="background:red;">&nbsp;</span>'
+        ),
+    ))
 
     realtarget = highlighted_text + " 2"
     good0 = testtxt.index(realtarget)
     good1 = testtxt.index(realtarget) + len(realtarget)
+    out.append('''\
+    <h4>begin and end index markers</h4>
+    %s
+    ''' % apply_dmarker(testtxt, {
+        good0: 'begin', good1: 'end',
+    }))
 
     # demo 2
     testtxt = """
@@ -213,10 +268,9 @@ span.marker {
 
     marked_text = testtxt.strip()
     dpostproc = {}
-    dpostproc[anc.approximate_offset] = '<sup class="approx">?</sup>'
-    dpostproc[actual_idx] = '<sup class="applied">!</sup>'
-    for i in reversed(sorted(dpostproc.keys())):
-        marked_text = marked_text[:i] + dpostproc[i] + marked_text[i:]
+    dpostproc[anc.approximate_offset] = 'approx'
+    dpostproc[actual_idx] = 'applied'
+    marked_text = apply_dmarker(testtxt.strip(), dpostproc)
 
     out.append('''
     <div>
