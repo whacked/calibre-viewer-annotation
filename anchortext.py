@@ -89,8 +89,8 @@ def apply_anchor_range(anchor0, anchor1, base_text):
 
 def apply_anchor(anc, base_text, force_start_index = 0):
     """
-    returns exact begin and end offset
-    based on `anchor`
+    returns starting index relative to base_text where
+    (anchor)anc is applied
     """
     idx_start = max(force_start_index, anc.approximate_offset - len(anc.token) * PRE_MULTIPLIER)
     idx_end   = min(len(base_text),    max(idx_start, anc.approximate_offset) + len(anc.token) * POST_MULTIPLIER)
