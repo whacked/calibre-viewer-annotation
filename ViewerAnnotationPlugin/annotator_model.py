@@ -2,23 +2,39 @@
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/model.py
 
 import datetime
-import sqlalchemy
-from elixir import *
+import sqlalchemy as sqla
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import \
+        Table, Column, \
+        Integer, String, Text, DateTime, \
+        ForeignKey
+from sqlalchemy.orm import mapper, sessionmaker, relationship, backref
 import json
 
-def setup_in_memory():
-    metadata.bind = "sqlite:///:memory:"
-    setup_all(True)
+Base = declarative_base()
 
-class Annotation(Entity):
-    id     = Field(Integer, primary_key=True)
-    uri    = Field(UnicodeText)
-    title  = Field(UnicodeText)
-    text   = Field(UnicodeText)
-    user   = Field(UnicodeText)
-    extras = Field(UnicodeText, default=u'{}')
-    ranges = OneToMany('Range')
-    timestamp = Field(DateTime, default=datetime.datetime.now)
+class DBMixin:
+    _session = None
+    @classmethod
+    def get(cls, id=None, **kw):
+        if cls._session is None:
+            return None
+        if id is not None:
+            return cls._session.query(cls).get(id)
+        elif kw:
+            return cls._session.query(cls).filter_by(**kw).first()
+
+class Annotation(Base, DBMixin):
+    __tablename__ = 'annotation'
+
+    id     = Column(Integer, primary_key=True)
+    id     = Column(Integer, primary_key=True)
+    uri    = Column(Text)
+    title  = Column(Text)
+    text   = Column(Text)
+    user   = Column(Text)
+    extras = Column(Text, default=u'{}')
+    timestamp = Column(DateTime, default=datetime.datetime.now)
 
     def authorise(self, action, user=None):
         # If self.user is None, all actions are allowed
@@ -67,20 +83,14 @@ class Annotation(Entity):
                 self.ranges.append(range)
 
     def to_dict(self, deep={}, exclude=[]):
-        deep.update({'ranges': {}})
-
-        result = super(Annotation, self).to_dict(deep, exclude)
-
-        try:
-            extras = json.loads(result[u'extras'])
-        except(TypeError):
-            extras = {}
-
-        del result[u'extras']
-
-        for key in extras:
-            result[key] = extras[key]
-
+        result = {
+            'ranges': []
+        }
+        for k, v in self.__dict__.iteritems():
+            if k.startswith('_'): continue
+            result[k] = v
+        for rg in self.range_list:
+            result['ranges'].append(rg.to_dict())
         return result
 
     def delete(self, *args, **kwargs):
@@ -92,22 +102,34 @@ class Annotation(Entity):
     def __repr__(self):
         return '<Annotation %s "%s">' % (self.id, self.text)
 
-class Range(Entity):
-    id          = Field(Integer, primary_key=True)
-    start       = Field(Unicode(255))
-    end         = Field(Unicode(255))
-    startOffset = Field(Integer)
-    endOffset   = Field(Integer)
+class Range(Base, DBMixin):
+    __tablename__ = 'range'
 
-    annotation  = ManyToOne('Annotation')
+    id          = Column(Integer, primary_key=True)
+    start       = Column(String(255))
+    end         = Column(String(255))
+    startOffset = Column(Integer)
+    endOffset   = Column(Integer)
+
+    # annotation  = ManyToOne('Annotation')
+
+    annotation_id = Column(Integer, ForeignKey('annotation.id'), nullable=False)
+    annotation    = relationship('Annotation',
+            backref=backref('range_list', lazy='dynamic'))
 
     def __repr__(self):
         return '<Range %s %s@%s %s@%s>' % (self.id, self.start, self.startOffset, self.end, self.endOffset)
 
-class Consumer(Entity):
-    key    = Field(String(512), primary_key=True, required=True)
-    secret = Field(String(512), required=True)
-    ttl    = Field(Integer, default=3600, nullable=False)
+    def to_dict(self):
+        return dict((k,v) for k,v in self.__dict__.iteritems()
+                if not k.startswith('_'))
+
+class Consumer(Base, DBMixin):
+    __tablename__ = 'consumer'
+
+    key    = Column(String(512), primary_key=True)
+    secret = Column(String(512))
+    ttl    = Column(Integer, default=3600, nullable=False)
 
     def __repr__(self):
         return '<Consumer %s>' % (self.key)
