@@ -188,10 +188,14 @@ highlight has been deleted.
     color:red;
 }
 .begin {
-    color:lightblue;
+    color: brown;
 }
 .end {
-    color:darkblue;
+    color: darkblue;
+}
+.attention {
+    background-color: lime;
+    border: 1px solid green;
 }
 
 /* anchor styling */
@@ -211,6 +215,13 @@ span.relative-offset {
     float: left;
     margin: 0;
     background: red;
+    border: 1px solid black;
+}
+span.combined-offset {
+    float: left;
+    margin: 0;
+    background: purple;
+    color: white;
     border: 1px solid black;
 }
 
@@ -250,6 +261,7 @@ sup {
             'applied': '!',
             'begin': '&lt;&lt;',
             'end': '&gt;&gt;',
+            'attention': '&nbsp;',
         }
 
         marked_text = text
@@ -262,13 +274,17 @@ sup {
     def render_anchor(anc):
         rtn = [
         '<div class="anchor-info">']
+
+        d = anc.__dict__.copy()
+        d['combined_offset'] = anc.approximate_offset + (anc.relative_offset or 0)
         rtn.append('''\
         <span class="approx-offset">%(approximate_offset)s</span>
         <span class="relative-offset">%(relative_offset)s</span>
+        <span class="combined-offset">%(combined_offset)s</span>
         <div class="anchor-token">
         %(token)s
         </div>
-        ''' % anc.__dict__)
+        ''' % d)
         if anc.support_anchor_list:
             rtn.append('<div>supported by:</div>')
             for support in anc.support_anchor_list:
@@ -288,6 +304,18 @@ sup {
 
     anc = at.make_anchor(highlighted_text, offset_begin, cur_doc_idx, document_text_list)
     out.append(render_anchor(anc))
+
+    support_dmarker = {}
+    for support in anc.support_anchor_list:
+        support_dmarker[support.approximate_offset] = 'begin'
+        support_dmarker[support.approximate_offset + len(support.token)] = 'end'
+        combined_offset = support.approximate_offset + (support.relative_offset or 0)
+        support_dmarker[combined_offset] = 'attention'
+    out.append('''\
+    <h4>mark support anchors</h4>
+    %s
+    ''' % (apply_dmarker(testtxt, support_dmarker)))
+
 
     anc.support_anchor_list = []
     ## screw up the offset; this should break the quick and dirty version
