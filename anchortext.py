@@ -37,6 +37,27 @@ class Anchor:
     def to_json(self):
         return json.dumps(self.to_dict())
 
+    @classmethod
+    def from_json(cls, mixed):
+        if   isinstance(mixed, basestring):
+            d = json.loads(mixed)
+        elif isinstance(mixed, dict):
+            d = mixed
+        else:
+            raise ValueError('argument must be (str) or (dict)')
+
+        for required_key in 'token support aoffset roffset'.split():
+            assert required_key in d
+
+        a = cls()
+        a.token               = d['token']
+        a.approximate_offset  = d['aoffset']
+        a.relative_offset     = d['roffset']
+        a.support_anchor_list = []
+        for dsupport in d['support']:
+            a.support_anchor_list.append(cls.from_json(dsupport))
+        return a
+
 class AnchorDoesNotExistException(Exception):
     pass
 
