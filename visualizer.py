@@ -438,7 +438,6 @@ def annotate():
 
 import sys
 sys.path.insert(0, 'ViewerAnnotationPlugin')
-sys.path.insert(0, 'ViewerAnnotationPlugin/elixir')
 import annotator_store as AStore
 import annotator_model as AModel
 
