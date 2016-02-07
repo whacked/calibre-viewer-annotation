@@ -105,12 +105,10 @@ def delete_annotation(id):
 
 # Search
 ## @store.route('/search')
-def search_annotations(**args):
+def search_annotations(all_fields = False, **args):
     params = [
         (k,v) for k,v in args.items() if k not in [ 'all_fields', 'offset', 'limit' ]
     ]
-    all_fields = args.get('all_fields', False)
-    all_fields = bool(all_fields)
     offset = args.get('offset', 0)
     limit = int(args.get('limit', 100))
     if limit < 0:
