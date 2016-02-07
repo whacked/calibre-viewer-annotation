@@ -438,4 +438,6 @@ def annotate():
 
 if __name__ == '__main__':
 
+    # run without werkzeug pin protection
+    # WERKZEUG_DEBUG_PIN=off python visualizer.py
     app.run(debug=True)
