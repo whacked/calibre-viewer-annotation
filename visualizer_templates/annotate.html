@@ -1,0 +1,72 @@
+
+<body>
+<link rel="stylesheet" href="{{ url_for('static', filename='annotator.1.2.7/annotator.min.css') }}" />
+
+
+<style>
+
+table {
+    height: 400px;
+}
+
+td div,textarea {
+    width: 100%;
+    height: 100%;
+}
+
+#work {
+    border: 1px solid black;
+}
+
+textarea {
+}
+
+</style>
+
+<table>
+    <tr>
+        <td width="50%" valign="top">
+            <div id="work">
+                {{ text }}
+            </div>
+        </td>
+        <td width="50%" valign="top">
+            <textarea placeholder="json representation" readonly="readonly"></textarea>
+        </td>
+    </tr>
+</table>
+
+
+{% for js in [
+'bower_components/jquery/jquery.min.js',
+'annotator.1.2.7/annotator.min.js',
+] %}
+<script src="{{ url_for('static', filename=js) }}"></script>
+{% endfor %}
+<script>
+
+$(function() {
+
+    // custom plugin to subscribe to events
+    Annotator.Plugin.MyPlugin = function(el) {
+        return {
+            pluginInit: function() {
+                console.log("initializing my plugin");
+                this.annotator
+                    .subscribe("annotationCreated", function(ann) {
+                        console.log("created...");
+                        console.log(ann);
+                        $("textarea").val(JSON.stringify(ann, null, 4));
+                    });
+            }
+        };
+    };
+
+
+    var main = $("#work");
+    main.annotator()
+        .annotator("addPlugin", "MyPlugin");
+});
+
+</script>
+</body>
