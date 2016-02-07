@@ -36,11 +36,17 @@
 
   1. ensure you have a working development environment set up
   2. clone this repo
+     
+     *FIXME*
+     
   3. edit the *PATH HACK* =ViewerAnnotationPlugin/annotator_model.py=
      so calibre is able to see your local install of =sqlalchemy=.  It is
      currently hard-coded to search in
      =/usr/local/lib/python2.7/dist-packages=. There's probably a way to make
      this self-contained but I don't know it.
+     
+     *FIXME*
+     
   4. in your terminal/command line program, navigate to the
      =ViewerAnnotationPlugin= directory and run =calibre-customize -b.=
      to install the plugin. If successful your =ebook-viewer= should
@@ -68,6 +74,15 @@
   
   and it should launch the viewer with the changes applied.
   
+** model description
+
+   the model definitions are in =ViewerAnnotationPlugin/annotator_model.py=
+
+   the models expect tables:
+   - annotation :: stores the annotation text, user, and other data (ref [[http://docs.annotatorjs.org/en/v1.2.x/annotation-format.html][official annotation format]])
+   - range :: stores simple start/end offsets and xpath information
+   - consumer :: currently unused
+   
 ** okfn/annotator files
 
    current code is hard-coded to expect =annotator-full.1.2.7=
