@@ -30,6 +30,10 @@ from calibre_plugins.viewer_annotation import annotator_model as AModel
 from calibre_plugins.viewer_annotation import annotator_store as AStore
 from calibre_plugins.viewer_annotation.config import prefs
 
+# FIXME this will break with elixir-removed version
+# FIXME this will break with elixir-removed version
+# FIXME this will break with elixir-removed version
+# FIXME this will break with elixir-removed version
 AModel.metadata.bind = 'sqlite:///%s' % prefs['annotator_db_path']
 # Create tables
 # NOTE: this is needed to trigger elixir's binding of `query` to model objects
