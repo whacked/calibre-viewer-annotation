@@ -111,8 +111,6 @@ class Range(Base, DBMixin):
     startOffset = Column(Integer)
     endOffset   = Column(Integer)
 
-    # annotation  = ManyToOne('Annotation')
-
     annotation_id = Column(Integer, ForeignKey('annotation.id'), nullable=False)
     annotation    = relationship('Annotation',
             backref=backref('range_list', lazy='dynamic'))
