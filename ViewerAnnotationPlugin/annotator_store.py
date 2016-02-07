@@ -2,7 +2,7 @@
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/store.py
 import datetime
 import json
-from annotator_model import DBMixin, Annotation, Range
+from annotator_model import Base, DBMixin, Annotation, Range
 import socket
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -22,6 +22,8 @@ def setup_in_file(dsn):
     if session is not None:
         return
     engine = create_engine(dsn)
+    Base.metadata.create_all(engine)
+
     Session = sessionmaker(bind=engine)
     session = Session()
     DBMixin._session = session

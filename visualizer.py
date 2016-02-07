@@ -442,8 +442,7 @@ sys.path.insert(0, 'ViewerAnnotationPlugin/elixir')
 import annotator_store as AStore
 import annotator_model as AModel
 
-AModel.metadata.bind = 'sqlite:///test.db'
-AModel.setup_all(True)
+AStore.setup_in_file('sqlite:///test.db')
 
 @app.route('/annotation')
 def annotation():
