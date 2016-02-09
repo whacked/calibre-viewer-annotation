@@ -83,7 +83,7 @@ class Annotation(Base, DBMixin):
         for k, v in self.__dict__.iteritems():
             if k.startswith('_'): continue
             result[k] = v
-        for rg in self.range_list:
+        for rg in self.ranges:
             result['ranges'].append(rg.to_dict())
         return result
 
@@ -106,7 +106,7 @@ class Range(Base, DBMixin):
 
     annotation_id = Column(Integer, ForeignKey('annotation.id'), nullable=False)
     annotation    = relationship('Annotation',
-            backref=backref('range_list', lazy='dynamic'))
+            backref=backref('ranges', lazy='dynamic'))
 
     # for backcompat, becuase elixir had such a method
     def delete(self, *args, **kwargs):
