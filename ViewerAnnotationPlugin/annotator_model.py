@@ -135,3 +135,9 @@ class Consumer(Base, DBMixin):
 
     def __repr__(self):
         return '<Consumer %s>' % (self.key)
+
+
+# trigger sqla orm mapper configuration to apply backrefs,
+# so class Annotation gets a `ranges` attr
+from sqlalchemy.orm import configure_mappers
+configure_mappers()

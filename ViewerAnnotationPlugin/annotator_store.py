@@ -27,6 +27,8 @@ def setup_in_file(dsn):
     session = Session()
     DBMixin._session = session
 
+    AModel.Base.metadata.create_all(engine)
+
 
 # We define our own jsonify rather than using flask.jsonify because we wish
 # to jsonify arbitrary objects (e.g. index returns a list) rather than kwargs.
