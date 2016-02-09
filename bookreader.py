@@ -8,6 +8,7 @@ from collections import Counter
 import epub
 from lxml import etree
 
+
 def epub_to_corpus(mixed, as_dict=False):
     '''
     mixed: a filepath or an epub object
@@ -23,47 +24,32 @@ def epub_to_corpus(mixed, as_dict=False):
     corpus = []
     valid_klist = []
 
-    # first pass: discover what the page prefix is
-    p_page = re.compile(r'^(\D+)(\d+)$')
-    manifest_klist = book.opf.manifest.keys()
+    # we only want page/document content
+    p_page = re.compile(r'(.*?)\.(html?)$')
+    # to separate the key from its numbering
+    p_key = re.compile(r'^(\D+)(\d+)$')
 
+    #page_prefix = sorted(prefix_counter, key=prefix_counter.get, reverse=True)[0]
     prefix_counter = Counter()
-    for key in manifest_klist:
-        match = p_page.match(key)
-        if not match:
-            continue
-        prefix, idstr = match.groups()
-        prefix_counter[prefix] += 1
 
-    if not prefix_counter:
-        raise Exception(textwrap.dedent('''
-            no page candidate found.
-
-            here are the keys in the manifest:
-            %s
-        ''' % (', '.join(sorted(manifest_klist)))))
+    bookdata = {}
+    for key in book.opf.manifest.keys():
+        manifest_item = book.opf.manifest[key]
+        match = p_page.match(manifest_item.href)
+        if match:
+            prefix = p_key.match(key).group(1)
+            prefix_counter[prefix] += 1
+            bookdata[key] = book.read_item(manifest_item)
 
     page_prefix = sorted(prefix_counter, key=prefix_counter.get, reverse=True)[0]
 
-    # second pass: build bookdata
-    bookdata = {}
-    for key in manifest_klist:
-        if not key.startswith(page_prefix):
-            continue
-        manifest_item = book.opf.manifest[key]
-        bookdata[key] = book.read_item(manifest_item)
-
     # strips out the leading 'html' for numbering
     keyfunc = lambda k: int(k[len(page_prefix):])
-
     for key in sorted(bookdata.keys(), key=keyfunc):
         xml = bookdata[key]
 
         # it turns out the book data may be binary data, e.g. JPEG
-        try:
-            tree = etree.fromstring(xml)
-        except etree.XMLSyntaxError:
-            continue
+        tree = etree.fromstring(xml)
 
         ## simple xpath won't work due to namespace prefixing
         ## either use this notation
