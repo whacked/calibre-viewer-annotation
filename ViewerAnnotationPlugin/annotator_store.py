@@ -3,13 +3,14 @@
 import datetime
 import json
 from annotator_model import DBMixin, Annotation, Range
-import socket
+import annotator_model as AModel
+import getpass
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
 
-CURRENT_USER_ID = unicode(socket.gethostname())
+CURRENT_USER_ID = unicode(getpass.getuser())
 
 __all__ = ["app", "store", "setup_app"]
 
