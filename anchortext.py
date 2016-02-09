@@ -118,7 +118,10 @@ def apply_anchor(anc, base_text, force_start_index = 0):
         rank_list.sort()
         return rank_list[0][1]
 
-def make_anchor(desired_token, approximate_offset, current_document_index, base_document_list):
+def make_anchor(desired_token, approximate_offset, document_key, corpus):
+    '''
+    `document_key`: key such that corpus[key] returns the desired document
+    '''
 
     idx_start = approximate_offset - len(desired_token) * PRE_MULTIPLIER
     idx_end   = approximate_offset + len(desired_token) * (POST_MULTIPLIER+1)
@@ -127,13 +130,13 @@ def make_anchor(desired_token, approximate_offset, current_document_index, base_
     anc.token = desired_token
     anc.approximate_offset = approximate_offset
 
-    tfidfer = TFIDF(base_document_list)
+    tfidfer = TFIDF(corpus)
 
     ## TODO
     ## consider implementing weighting by distance, closer is better
     ## though, as currently by tfidf, our support anchors should be
     ## within the same "page" at least
-    for score, firstidx, token in tfidfer.bestn(current_document_index, N = 20):
+    for score, firstidx, token in tfidfer.bestn(document_key, N = 20):
         if len(anc.support_anchor_list) > 5: break
         if token == desired_token: continue
         ## this is going to store a DELTA offset
@@ -145,15 +148,15 @@ def make_anchor(desired_token, approximate_offset, current_document_index, base_
 
     return anc
 
-def make_anchor_range(desired_text, approximate_offset, current_document_index, base_document_list):
+def make_anchor_range(desired_text, approximate_offset, document_key, corpus):
     spl = filter(lambda (offset, token): len(token) > 0, tokenize(desired_text))
     token0 = spl[0][1]
     token1 = spl[-1][1]
     offset0 = approximate_offset
     offset1 = approximate_offset + len(desired_text) - len(token1)
 
-    anchor0 = make_anchor(token0, offset0, current_document_index, base_document_list)
-    anchor1 = make_anchor(token1, offset1, current_document_index, base_document_list)
+    anchor0 = make_anchor(token0, offset0, document_key, corpus)
+    anchor1 = make_anchor(token1, offset1, document_key, corpus)
 
     return anchor0, anchor1
 
