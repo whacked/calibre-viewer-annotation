@@ -1,0 +1,114 @@
+<html>
+  <head>
+<title>test</title>
+</head>
+<body>
+<h1>test</h1>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+<script src="http://localhost:8080/skewer"></script>
+
+<div id="bx">
+<input id="txt" type="text" autocomplete="off" />
+<button id="btn">click</button>
+
+</div>
+<!-- from wikipeida tf-idf -->
+
+<div id="content">
+<p>
+tf–idf, short for term frequency–inverse document frequency, is a numerical statistic that is intended to reflect how important a word is to a document in a collection or corpus.[1]:8 It is often used as a weighting factor in information retrieval and text mining. The tf-idf value increases proportionally to the number of times a word appears in the document, but is offset by the frequency of the word in the corpus, which helps to control for the fact that some words are generally more common than others.
+</p><p>
+Variations of the tf–idf weighting scheme are often used by search engines as a central tool in scoring and ranking a document's relevance given a user query. tf–idf can be successfully used for stop-words filtering in various subject fields including text summarization and classification.
+</p><p>
+One of the simplest ranking functions is computed by summing the tf–idf for each query term; many more sophisticated ranking functions are variants of this simple model.
+</p><p>
+Contents  [hide] 
+1 Motivation
+2 Definition
+3 Justification of idf
+4 Example of tf–idf
+5 See also
+6 References
+7 External links and suggested reading
+Motivation[edit]
+Suppose we have a set of English text documents and wish to determine which document is most relevant to the query "the brown cow". A simple way to start out is by eliminating documents that do not contain all three words "the", "brown", and "cow", but this still leaves many documents. To further distinguish them, we might count the number of times each term occurs in each document and sum them all together; the number of times a term occurs in a document is called its term frequency.
+</p><p>
+However, because the term "the" is so common, this will tend to incorrectly emphasize documents which happen to use the word "the" more frequently, without giving enough weight to the more meaningful terms "brown" and "cow". The term "the" is not a good keyword to distinguish relevant and non-relevant documents and terms, unlike the less common words "brown" and "cow". Hence an inverse document frequency factor is incorporated which diminishes the weight of terms that occur very frequently in the document set and increases the weight of terms that occur rarely.
+</p><p>
+Definition[edit]
+tf–idf is the product of two statistics, term frequency and inverse document frequency. Various ways for determining the exact values of both statistics exist. In the case of the term frequency tf(t,d), the simplest choice is to use the raw frequency of a term in a document, i.e. the number of times that term t occurs in document d. If we denote the raw frequency of t by f(t,d), then the simple tf scheme is tf(t,d) = f(t,d). Other possibilities include[2]:128
+</p><p>
+Boolean "frequencies": tf(t,d) = 1 if t occurs in d and 0 otherwise;
+logarithmically scaled frequency: tf(t,d) = 1 + log f(t,d), or zero if f(t, d) is zero;
+augmented frequency, to prevent a bias towards longer documents, e.g. raw frequency divided by the maximum raw frequency of any term in the document:
+\mathrm{tf}(t,d) = 0.5 + \frac{0.5 \times \mathrm{f}(t, d)}{\max\{\mathrm{f}(w, d):w \in d\}}
+The inverse document frequency is a measure of how much information the word provides, that is, whether the term is common or rare across all documents. It is the logarithmically scaled fraction of the documents that contain the word, obtained by dividing the total number of documents by the number of documents containing the term, and then taking the logarithm of that quotient.
+</p><p>
+ \mathrm{idf}(t, D) =  \log \frac{N}{|\{d \in D: t \in d\}|}
+with
+</p><p>
+N: total number of documents in the corpus
+ |\{d \in D: t \in d\}|  : number of documents where the term  t  appears (i.e.,  \mathrm{tf}(t,d) \neq 0). If the term is not in the corpus, this will lead to a division-by-zero. It is therefore common to adjust the denominator to 1 + |\{d \in D: t \in d\}|.
+Mathematically the base of the log function does not matter and constitutes a constant multiplicative factor towards the overall result.
+</p><p>
+Then tf–idf is calculated as
+</p><p>
+\mathrm{tfidf}(t,d,D) = \mathrm{tf}(t,d) \times \mathrm{idf}(t, D)
+A high weight in tf–idf is reached by a high term frequency (in the given document) and a low document frequency of the term in the whole collection of documents; the weights hence tend to filter out common terms. Since the ratio inside the idf's log function is always greater than or equal to 1, the value of idf (and tf-idf) is greater than or equal to 0. As a term appears in more documents, the ratio inside the logarithm approaches 1, bringing the idf and tf-idf closer to 0.
+</p><p>
+Justification of idf[edit]
+Idf was introduced, as "term specificity", by Karen Spärck Jones in a 1972 paper. Although it has worked well as a heuristic, its theoretical foundations have been troublesome for at least three decades afterward, with many researchers trying to find information theoretic justifications for it.[3]
+</p><p>
+Spärck Jones's own explanation didn't propose much theory, aside from a connection to Zipf's law.[3] Attempts have been made to put idf on a probabilistic footing,[4] by estimating the probability that a given document d contains a term t as
+</p><p>
+
+P(t|d) = \frac{|\{d \in D: t \in d\}|}{N}
+</p><p>
+so that we can define idf as
+</p><p>
+
+\begin{align}
+\mathsf{idf} & = -\log P(t|d) \\
+             & = \log \frac{1}{P(t|d)} \\
+             & = \log \frac{N}{|\{d \in D: t \in d\}|}
+\end{align}
+</p><p>
+This probabilistic interpretation in turn takes the same form as that of self-information. However, applying such information-theoretic notions to problems in information retrieval leads to problems when trying to define the appropriate event spaces for the required probability distributions: not only documents need to be taken into account, but also queries and terms.[3]
+</p><p>
+Example of tf–idf[edit]
+Suppose we have term frequency tables for a collection consisting of only two documents, as listed on the right, then calculation of tf–idf for the term "this" in document 1 is performed as follows.
+</p><p>
+Document 2
+Term	Term Count
+this	1
+is	1
+another	2
+example	3
+Document 1
+Term	Term Count
+this	1
+is	1
+a	2
+sample	1
+Tf, in its basic form, is just the frequency that we look up in appropriate table. In this case, it's one.
+</p><p>
+Idf is a bit more involved:
+</p><p>
+ \mathrm{idf}(\mathsf{this}, D) =  \log \frac{N}{|\{d \in D: t \in d\}|}
+The numerator of the fraction is the number of documents, which is two. The number of documents in which "this" appears is also two, giving
+</p><p>
+ \mathrm{idf}(\mathsf{this}, D) =  \log \frac{2}{2} = 0
+So tf–idf is zero for this term, and with the basic definition this is true of any term that occurs in all documents.
+</p><p>
+A slightly more interesting example arises from the word "example", which occurs three times but in only one document. For this document, tf–idf of "example" is:
+</p><p>
+\mathrm{tf}(\mathsf{example}, d_2) = 3
+\mathrm{idf}(\mathsf{example}, D) = \log \frac{2}{1} \approx 0.3010
+\mathrm{tfidf}(\mathsf{example}, d_2) = \mathrm{tf}(\mathsf{example}, d_2) \times \mathrm{idf}(\mathsf{example}, D) = 3 \times 0.3010 \approx 0.9030
+(using the base 10 logarithm).
+</p>
+</div>
+
+<script src="test.js"></script>
+</body>
+</html>

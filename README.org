@@ -2,7 +2,9 @@
 
 * adding annotation (read and write) capability to calibre's ebook-viewer
   
-  sporadic work in progress. last updated on 2014-11-14
+  sporadic work in progress. last updated on 2016-02-07
+
+  *WARNING: if you have used this before, and are planning to update, please backup your highlights database before updating*
 
   [[./doc/img/ss-007.png]]
   
@@ -17,11 +19,16 @@
 * external dependencies
 
   - sqlalchemy
-  - [[http://elixir.ematia.de/trac/wiki][elixir]]
     
   both should be installable via pip; due to *PATH HACK* below, we're
   assuming a system install where you know the inclusion path for both
   libraries
+
+** alternative installation
+
+   download and extract sqlalchemy, and
+
+   - mv SQLAlchemy-0.9.8/lib/sqlalchemy calibre/lib/python2.7/site-packages
 
 * installing+using the plugin
 
@@ -32,10 +39,10 @@
   1. ensure you have a working development environment set up
   2. clone this repo
   3. edit the *PATH HACK* =ViewerAnnotationPlugin/annotator_model.py=
-     so calibre is able to see your local install of =sqlalchemy= and
-     =elixir=. It is currently hard-coded to search in
-     =/usr/local/lib/python2.7/dist-packages=. There's probably a way
-     to make this self-contained but I don't know it.
+     so calibre is able to see your local install of =sqlalchemy=.  It is
+     currently hard-coded to search in
+     =/usr/local/lib/python2.7/dist-packages=. There's probably a way to make
+     this self-contained but I don't know it.
   4. in your terminal/command line program, navigate to the
      =ViewerAnnotationPlugin= directory and run =calibre-customize -b.=
      to install the plugin. If successful your =ebook-viewer= should

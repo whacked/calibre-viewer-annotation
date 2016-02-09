@@ -92,14 +92,6 @@ class AnnotationTOC(TOC):
             x.possible_end_anchors = possible_enders
 
         self.currently_viewed_entry = None
-        for i in range(10):
-            toc.append(MetaTOC(
-                href = 'foo',
-                fragment = 'bar',
-                text = 'baz',
-                base_path = str(i),
-                ))
-
 
     def __init__(self, spine, book_title):
         QStandardItemModel.__init__(self)
@@ -195,7 +187,7 @@ class Responder(QtCore.QObject):
             dlog("POST %s" % url)
             data = json.loads(jsr["data"])
             ## hack in the calibre viewer position
-            bm = self.parent().bookmark()
+            bm = document.bookmark()
             bm['spine'] = ebookviewer.current_index
             data['calibre_bookmark'] = bm
             data['title'] = ebookviewer.current_title

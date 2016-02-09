@@ -1,17 +1,50 @@
 # modified from
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/store.py
+import datetime
 import json
-from annotator_model import Annotation, Range, session
-import socket
+from annotator_model import DBMixin, Annotation, Range
+import annotator_model as AModel
+import getpass
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-CURRENT_USER_ID = unicode(socket.gethostname())
+
+
+CURRENT_USER_ID = unicode(getpass.getuser())
 
 __all__ = ["app", "store", "setup_app"]
 
+# module level global
+session = None
+
+def setup_database(DSN):
+    '''
+    `DSN`: data source name; examples
+
+      - in memory: sqlite:///:memory:
+      - sqlite (assumed use case): sqlite:///PATH/TO/YOUR/database.db
+    '''
+    global session
+    if session is not None:
+        return
+    engine = create_engine(DSN)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    DBMixin._session = session
+
+    AModel.Base.metadata.create_all(engine)
+
+
 # We define our own jsonify rather than using flask.jsonify because we wish
 # to jsonify arbitrary objects (e.g. index returns a list) rather than kwargs.
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return str(obj)
+        else:
+            return json.JSONEncoder.default(self, obj)
 def jsonify(obj, *args, **kwargs):
-    res = json.dumps(obj, indent=2)
+    res = json.dumps(obj, cls=DateTimeEncoder)
     return res
 
 def unjsonify(str):
@@ -23,7 +56,8 @@ def get_current_userid():
 # INDEX
 ## @store.route('/annotations')
 def index():
-    annotations = [a.to_dict() for a in Annotation.query.all() if a.authorise('read', get_current_userid())]
+    annotations = [a.to_dict() for a in session.query(Annotation).all() \
+            if a.authorise('read', get_current_userid())]
     return jsonify(annotations)
 
 # CREATE
@@ -88,7 +122,7 @@ def search_annotations(**args):
     if limit < 0:
         limit = None
 
-    q = Annotation.query
+    q = session.query(Annotation)
     for k,v in params:
         kwargs = { k: unicode(v) }
         q = q.filter_by(**kwargs)
