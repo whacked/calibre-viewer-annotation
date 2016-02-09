@@ -4,6 +4,8 @@
   
   sporadic work in progress. last updated on 2016-02-07
 
+  *WARNING: if you have used this before, and are planning to update, please backup your highlights database before updating*
+
   [[./doc/img/ss-007.png]]
   
   There are 2 main issues we care about here, addressed in headings below
