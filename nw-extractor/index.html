@@ -12,6 +12,7 @@
  * should capture + display selection from child window for final reconcilation/manual fix
  */
 
+var CWD = process.cwd();
 var gui = require("nw.gui");
 
 console.log(gui.App.argv.length);
@@ -169,7 +170,7 @@ output = {};
 
 // 3. second pass
 function launch_and_find(source_filepath, entry, close_after_ms) {
-    var search_window = gui.Window.open("file://" + source_filepath, {
+    var search_window = gui.Window.open("file://" + CWD + "/" + source_filepath, {
         "inject-js-start": "node_modules/xpath-range/xpath-range-bundle.js",
         "inject-js-end": "js/driver.js",
         position: "mouse"
