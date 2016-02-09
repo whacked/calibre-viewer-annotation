@@ -30,6 +30,7 @@ class Annotation(Base, DBMixin):
     id     = Column(Integer, primary_key=True)
     uri    = Column(Text)
     title  = Column(Text)
+    # TODO: need a 'quote' field
     text   = Column(Text)
     user   = Column(Text)
     extras = Column(Text, default=u'{}')
