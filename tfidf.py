@@ -114,12 +114,17 @@ class TFIDF:
     def __init__(self, corpus):
         self.corpus = corpus
         self.ndoc = len(corpus)
-        for i, document in enumerate(corpus):
-            self._dmemo[i] = Counter(map_get_second(tokenize(document.lower())))
+        if isinstance(corpus, collections.Mapping):
+            self.doc_key_list = corpus.keys()
+        else:
+            self.doc_key_list = range(len(corpus))
+        for k in self.doc_key_list:
+            document = corpus[k]
+            self._dmemo[k] = Counter(map_get_second(tokenize(document.lower())))
 
     def tfidf(self, term, document_key):
         term = term.lower()
-        n_doc_wterm = len(filter(lambda doc_id: self._dmemo[doc_id].get(term) or 0, range(self.ndoc)))
+        n_doc_wterm = len(filter(lambda doc_id: self._dmemo[doc_id].get(term) or 0, self.doc_key_list))
         return self._dmemo[document_key][term] * math.log(float(self.ndoc) / n_doc_wterm)
 
     def bestn(self, dockey, N = 6):
