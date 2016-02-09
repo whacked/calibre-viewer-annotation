@@ -28,7 +28,6 @@ class Annotation(Base, DBMixin):
     __tablename__ = 'annotation'
 
     id     = Column(Integer, primary_key=True)
-    id     = Column(Integer, primary_key=True)
     uri    = Column(Text)
     title  = Column(Text)
     text   = Column(Text)
