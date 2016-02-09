@@ -2,31 +2,37 @@
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/store.py
 import datetime
 import json
-from annotator_model import Base, DBMixin, Annotation, Range
-import socket
+from annotator_model import DBMixin, Annotation, Range
+import annotator_model as AModel
+import getpass
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
 
-CURRENT_USER_ID = unicode(socket.gethostname())
+CURRENT_USER_ID = unicode(getpass.getuser())
 
 __all__ = ["app", "store", "setup_app"]
 
-def setup_in_memory():
-    metadata.bind = "sqlite:///:memory:"
-
+# module level global
 session = None
-def setup_in_file(dsn):
+
+def setup_database(DSN):
+    '''
+    `DSN`: data source name; examples
+
+      - in memory: sqlite:///:memory:
+      - sqlite (assumed use case): sqlite:///PATH/TO/YOUR/database.db
+    '''
     global session
     if session is not None:
         return
-    engine = create_engine(dsn)
-    Base.metadata.create_all(engine)
-
+    engine = create_engine(DSN)
     Session = sessionmaker(bind=engine)
     session = Session()
     DBMixin._session = session
+
+    AModel.Base.metadata.create_all(engine)
 
 
 # We define our own jsonify rather than using flask.jsonify because we wish
@@ -105,10 +111,12 @@ def delete_annotation(id):
 
 # Search
 ## @store.route('/search')
-def search_annotations(all_fields = False, **args):
+def search_annotations(**args):
     params = [
         (k,v) for k,v in args.items() if k not in [ 'all_fields', 'offset', 'limit' ]
     ]
+    all_fields = args.get('all_fields', False)
+    all_fields = bool(all_fields)
     offset = args.get('offset', 0)
     limit = int(args.get('limit', 100))
     if limit < 0:
