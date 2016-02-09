@@ -7,6 +7,7 @@ import math
 import random
 import operator
 
+import collections
 from collections import Counter
 
 
@@ -71,6 +72,16 @@ def tokenize(s):
 def map_get_second(ls):
     return map(operator.itemgetter(1), ls)
 
+def corpus_key_list(corpus):
+    '''
+    given a corpus, return a iterable of all keys that can be used on
+    the corpus to retrieve individual (str)text items within
+    '''
+    if isinstance(corpus, collections.Mapping):
+        return corpus
+    else:
+        return range(len(corpus))
+
 def tf(term, document):
     """term frequency
 
@@ -79,17 +90,19 @@ def tf(term, document):
     """
     return map_get_second(tokenize(document.lower())).count(term.lower())
 
-def idf(term, document_list):
+def idf(term, corpus):
     """inverse document frequency
     
-    - `document_list`: list of string
+    - `corpus`: an object that implements __getitem__ and __len__,
+                and __getitem__(key) returns a (basestring)object
     """
-    n_doc_total = float(len(document_list))
-    n_doc_wterm = len(filter(lambda doc: 1 if tf(term, doc) > 0 else 0, document_list))
+    klist = corpus_key_list(corpus)
+    n_doc_total = float(len(corpus))
+    n_doc_wterm = len(filter(lambda k: 1 if tf(term, corpus[k]) > 0 else 0, klist))
     return math.log(n_doc_total / n_doc_wterm)
 
-def tfidf(term, idx_document, document_list):
-    return tf(term, document_list[idx_document]) * idf(term, document_list)
+def tfidf(term, document_key, corpus):
+    return tf(term, corpus[document_key]) * idf(term, corpus)
 
 class TFIDF:
 
@@ -98,18 +111,18 @@ class TFIDF:
     """.strip().split())
 
     _dmemo = {}
-    def __init__(self, document_list):
-        self.document_list = document_list
-        self.ndoc = len(document_list)
-        for i, document in enumerate(document_list):
+    def __init__(self, corpus):
+        self.corpus = corpus
+        self.ndoc = len(corpus)
+        for i, document in enumerate(corpus):
             self._dmemo[i] = Counter(map_get_second(tokenize(document.lower())))
 
-    def tfidf(self, term, idx_document):
+    def tfidf(self, term, document_key):
         term = term.lower()
         n_doc_wterm = len(filter(lambda doc_id: self._dmemo[doc_id].get(term) or 0, range(self.ndoc)))
-        return self._dmemo[idx_document][term] * math.log(float(self.ndoc) / n_doc_wterm)
+        return self._dmemo[document_key][term] * math.log(float(self.ndoc) / n_doc_wterm)
 
-    def bestn(self, docidx, N = 6):
+    def bestn(self, dockey, N = 6):
         """
 
         returns: a tuple of (tfidf score, index of *first* occurence, token in question)
@@ -120,7 +133,7 @@ class TFIDF:
         # indexes (for human readability if one somehow wants to scan through
         # the text for the matching anchor keyword), so save the first matching
         # token's index
-        for idx, token in tokenize(self.document_list[docidx]):
+        for idx, token in tokenize(self.corpus[dockey]):
             if token not in dcount:
                 dcount[token] = []
             dcount[token].append(idx)
@@ -132,7 +145,7 @@ class TFIDF:
             ltoken = token.lower()
             if ltoken in used: continue
             used.add(ltoken)
-            res.append((self.tfidf(token, docidx), idxlist[0], token))
+            res.append((self.tfidf(token, dockey), idxlist[0], token))
         res.sort()
         return res[-N:]
 
@@ -142,7 +155,7 @@ if __name__ == "__main__":
 
     mydc = dict((key, book.read_item(item)) for key, item in filter(lambda (k, i): k.startswith("html"), book.opf.manifest.items()))
 
-    ls_text = []
+    corpus = []
     for key in sorted(mydc.keys(), lambda a, b: int(a[4:]) > int(b[4:]) and 1 or -1):
         xml = mydc[key]
         tree = etree.fromstring(xml)
@@ -157,16 +170,16 @@ if __name__ == "__main__":
         for node in tree.xpath('''//*[local-name() = "style"]'''):
             node.getparent().remove(node)
         text = etree.tostring(tree, encoding = "utf8", method = "text")
-        ls_text.append(text)
+        corpus.append(text)
 
-    tfidfer = TFIDF(ls_text)
+    tfidfer = TFIDF(corpus)
     
-    docnum = random.randint(1, len(ls_text))
+    docnum = random.randint(1, len(corpus))
     docnum = 22
     docidx = docnum - 1
     if False:
         res = []
-        alltoken = set(map_get_second(tokenize(" ".join(ls_text[docidx:docidx+1]))))
+        alltoken = set(map_get_second(tokenize(" ".join(corpus[docidx:docidx+1]))))
         print "DOCNUM: ", docnum
         for i, token in enumerate(alltoken):
             sys.stdout.write("%04d / %04d\r" % (i, len(alltoken)))
@@ -178,7 +191,7 @@ if __name__ == "__main__":
 
         res = tfidfer.bestn(docidx)
 
-    mytext = ls_text[docidx]
+    mytext = corpus[docidx]
     for score, firstidx, token in res:
         print token, "\t", score, firstidx, mytext[firstidx:firstidx+len(token)]
 
