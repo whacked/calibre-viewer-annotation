@@ -5,7 +5,7 @@ convenience functions for dealing with book (now epub) files
 import epub
 from lxml import etree
 
-def epub_to_corpus(mixed):
+def epub_to_corpus(mixed, as_dict=False):
     '''
     mixed: a filepath or an epub object
     '''
@@ -29,7 +29,8 @@ def epub_to_corpus(mixed):
 
     # strips out the leading 'html' for numbering
     keyfunc = lambda k: int(k[4:])
-    for key in sorted(bookdata.keys(), key=keyfunc):
+    sorted_klist = list(sorted(bookdata.keys(), key=keyfunc))
+    for key in sorted_klist:
         xml = bookdata[key]
         tree = etree.fromstring(xml)
 
@@ -44,6 +45,9 @@ def epub_to_corpus(mixed):
             node.getparent().remove(node)
         text = etree.tostring(tree, encoding = 'utf8', method = 'text')
         corpus.append(text)
+
+    if as_dict:
+        return dict(zip(sorted_klist, corpus))
     return corpus
 
 
