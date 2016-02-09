@@ -14,15 +14,20 @@ CURRENT_USER_ID = unicode(getpass.getuser())
 
 __all__ = ["app", "store", "setup_app"]
 
-def setup_in_memory():
-    metadata.bind = "sqlite:///:memory:"
-
+# module level global
 session = None
-def setup_in_file(dsn):
+
+def setup_database(DSN):
+    '''
+    `DSN`: data source name; examples
+
+      - in memory: sqlite:///:memory:
+      - sqlite (assumed use case): sqlite:///PATH/TO/YOUR/database.db
+    '''
     global session
     if session is not None:
         return
-    engine = create_engine(dsn)
+    engine = create_engine(DSN)
     Session = sessionmaker(bind=engine)
     session = Session()
     DBMixin._session = session
