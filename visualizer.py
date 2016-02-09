@@ -5,7 +5,7 @@ quick and dirty server for browser rendering of processed text
 '''
 
 
-from flask import Flask, render_template, render_template_string, url_for
+from flask import Flask, request, render_template, render_template_string, url_for
 
 import anchortext as at
 from easydict import EasyDict
@@ -19,6 +19,7 @@ reload(tp)
 
 
 
+cur_doc_idx = 2
 document_text_list = [
             """
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. 
@@ -37,6 +38,7 @@ Vestibulum sapien. Proin quam. Etiam ultrices. Suspendisse in justo eu magna luc
 Donec lacus nunc, viverra nec, blandit vel, egestas et, augue. Vestibulum tincidunt malesuada tellus. Ut ultrices ultrices enim. Curabitur sit amet mauris. Morbi in dui quis est pulvinar ullamcorper. Nulla facilisi. Integer lacinia sollicitudin massa. Cras metus. Sed aliquet risus a tortor. Integer id quam. Morbi mi. 
             """,
 ]
+document_text_list = map(str.strip, document_text_list)
 
 
 
@@ -113,7 +115,6 @@ def anchortext():
 
 
 
-    document_text_list = map(str.strip, document_text_list)
     highlighted_text = "this is the real target text" # we want 2
 
     out = ['''\
@@ -300,8 +301,6 @@ sup {
     # demo 1
     import random
 
-    cur_doc_idx = 2
-
     offset_begin = 310
     testtxt = document_text_list[cur_doc_idx]
     ra0, ra1 = at.make_anchor_range(highlighted_text, offset_begin, cur_doc_idx, document_text_list)
@@ -351,7 +350,7 @@ sup {
         ),
     ))
 
-    realtarget = highlighted_text + " 2"
+    realtarget = highlighted_text + " %s" % cur_doc_idx
     good0 = testtxt.index(realtarget)
     good1 = testtxt.index(realtarget) + len(realtarget)
     out.append('''\
@@ -431,32 +430,130 @@ sup {
 @app.route('/annotate')
 def annotate():
     ctx = EasyDict()
-    ctx.text = document_text_list[2]
+    ctx.text = document_text_list[cur_doc_idx]
 
     return render_template('annotate.html', **ctx)
 
 
 import sys
 sys.path.insert(0, 'ViewerAnnotationPlugin')
-sys.path.insert(0, 'ViewerAnnotationPlugin/elixir')
 import annotator_store as AStore
 import annotator_model as AModel
 
-AModel.metadata.bind = 'sqlite:///test.db'
-AModel.setup_all(True)
+AStore.setup_in_file('sqlite:///test.db')
 
+@app.route('/store/annotations')
+def store_annotations():
+    print request.values.to_dict()
+    rtn = {
+'total': 1,
+'rows': [
+{
+        "ranges": [
+            {
+                "start": "",
+                "startOffset": 303,
+                "end": "",
+                "endOffset": 328
+            }
+        ],
+        "quote": "not really no so actually",
+        "highlights": [
+            {}
+        ],
+        "text": "hello highlight"
+    }
+]
+
+}
+    return '''\
+    [
+    {
+        "ranges": [
+            {
+                "start": "",
+                "startOffset": 303,
+                "end": "",
+                "endOffset": 310
+            }
+        ],
+        "quote": "not really no so FOO",
+        "highlights": [
+            {},
+            {}
+        ],
+        "text": "hello the highlight"
+    }
+    
+    ]
+'''
+    return json.dumps(rtn)
+
+@app.route('/annotator2anchor', methods=['GET','POST'])
+def annotator2anchor():
+    ann = json.loads(request.values.get('annotation'))
+    anc = at.make_anchor(
+            ann['quote'],                  # anchor (highlight) text
+            ann['ranges'][0]['startOffset'],  # approx begin offset
+            cur_doc_idx,                   # current document index
+            document_text_list,            # document text list
+            )
+    return anc.to_json()
+    
+@app.route('/anchor2annotator', methods=['GET','POST'])
+def anchor2annotator():
+    anc = at.Anchor.from_json(request.values.get('anchor'))
+    ann = AModel.Annotation()
+    ann.text       = '(not used in anchor!)'
+    ann.title      = 'title of the book'
+    ann.ranges     = []
+
+    # FIXME
+    # not in database model!
+    ann.quote      = anc.token
+    ann.highlights = []
+
+    # set up ranges
+    reference_text = request.values.get('text')
+    idx_begin = at.apply_anchor(anc, reference_text)
+    idx_end   = idx_begin + len(anc.token)
+    ann.ranges.append({
+        'start': '',
+        'end': '',
+        'startOffset': idx_begin,
+        'endOffset': idx_end,
+    })
+
+    return json.dumps(ann.to_dict())
+    
 @app.route('/annotation')
 def annotation():
     ctx = EasyDict()
-    asdf
-    annot_resultset = json.loads(AStore.search_annotations(
-        #uri = "epub://" + href,
-        #title = self.book_title,
-        title = '%',
+    ctx.resultset = json.loads(AStore.search_annotations(
+        all_fields = True,
     ))
-    print AModel.Annotation.query.all()
-    print annot_resultset
     return render_template_string('''\
+<table>
+{% set klist = ['id', 'title', 'uri', 'ranges', 'text'] %}
+<tr>
+{% for k in klist %}
+<th>{{ k }}</th>
+{% endfor %}
+</tr>
+
+{% for ann in resultset['rows'] %}
+<tr>
+
+{% for k in klist %}
+<td>
+{{ ann[k] }}
+</td>
+{% endfor %}
+
+</tr>
+{% endfor %}
+</table>
+
 ''', **ctx)
 
 
