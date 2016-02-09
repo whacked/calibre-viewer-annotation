@@ -47,36 +47,31 @@ class Annotation(Base, DBMixin):
         else:
             return user == self.user
 
+    # NOTE: this is supposed to supercede a from_dict
+    # method originally implemented in elixir.Entity;
+    # though I think it makes more sense as a classmethod
+    # and will probably move in that direction
     def from_dict(self, data):
         obj = {
             u'extras': json.loads(self.extras if self.extras else u'{}')
         }
 
+        ranges = data.pop('ranges', None)
         for key in data:
             if hasattr(self, key):
                 obj[key] = data[key]
             else:
                 obj[u'extras'][key] = data[key]
-
         # Reserialize
         obj[u'extras'] = json.dumps(obj[u'extras'], ensure_ascii=False)
-
-        if u'ranges' in obj:
-            ranges = obj[u'ranges']
-            del obj[u'ranges']
-        else:
-            ranges = None
-
-        super(Annotation, self).from_dict(obj)
+        for k in obj:
+            setattr(self, k, obj[k])
 
         if ranges:
             for range in self.ranges:
                 range.delete()
 
             for range_data in ranges:
-                if u'id' in range_data:
-                    del range_data[u'id']
-
                 range = Range()
                 range.from_dict(range_data)
                 self.ranges.append(range)
@@ -93,10 +88,9 @@ class Annotation(Base, DBMixin):
         return result
 
     def delete(self, *args, **kwargs):
-        for range in self.ranges:
-            range.delete()
-
-        return super(Annotation, self).delete(*args, **kwargs)
+        for r in self.ranges:
+            self._session.delete(r)
+        self._session.delete(self)
 
     def __repr__(self):
         return '<Annotation %s "%s">' % (self.id, self.text)
@@ -114,13 +108,24 @@ class Range(Base, DBMixin):
     annotation    = relationship('Annotation',
             backref=backref('range_list', lazy='dynamic'))
 
+    # for backcompat, becuase elixir had such a method
+    def delete(self, *args, **kwargs):
+        self._session.delete(self)
+
     def __repr__(self):
         return '<Range %s %s@%s %s@%s>' % (self.id, self.start, self.startOffset, self.end, self.endOffset)
+
+    def from_dict(self, dc):
+        for c in self.__table__.c:
+            setattr(self, c.name, dc.get(c.name))
 
     def to_dict(self):
         return dict((k,v) for k,v in self.__dict__.iteritems()
                 if not k.startswith('_'))
 
+# NOT USED, but see
+# http://docs.annotatorjs.org/en/v1.2.x/authentication.html
+# for motivation
 class Consumer(Base, DBMixin):
     __tablename__ = 'consumer'
 
