@@ -1,8 +1,6 @@
 import os, sys
 import yaml
-import epub
 import re
-from lxml import etree
 import math
 import random
 import operator
@@ -151,26 +149,9 @@ class TFIDF:
 
 if __name__ == "__main__":
 
-    book = epub.open_epub("test.epub")
+    import bookreader as bkr
 
-    mydc = dict((key, book.read_item(item)) for key, item in filter(lambda (k, i): k.startswith("html"), book.opf.manifest.items()))
-
-    corpus = []
-    for key in sorted(mydc.keys(), lambda a, b: int(a[4:]) > int(b[4:]) and 1 or -1):
-        xml = mydc[key]
-        tree = etree.fromstring(xml)
-
-        ## simple xpath won't work due to namespace prefixing
-        ## either use this notation
-        ## tree.xpath("//xhtml:style", namespaces={'xhtml': tree.nsmap[None]})
-        ## here, the None ns is actually the 'xhtml' ns
-        ## though i think you can redefine it to whatever you want
-        ## as opposed to 'xhtml' in the query
-        ## or this
-        for node in tree.xpath('''//*[local-name() = "style"]'''):
-            node.getparent().remove(node)
-        text = etree.tostring(tree, encoding = "utf8", method = "text")
-        corpus.append(text)
+    corpus = bkr.epub_to_corpus('test.epub')
 
     tfidfer = TFIDF(corpus)
     
