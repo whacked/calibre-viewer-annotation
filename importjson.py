@@ -19,21 +19,20 @@ import annotator_store as AStore
 import os
 import datetime
 
-AModel.metadata.bind = 'sqlite:///%s' % os.path.expanduser('~/ebook-viewer-annotation.db')
-AModel.setup_all(True)
+DSN = 'sqlite:///%s' % os.path.expanduser('~/ebook-viewer-annotation.db')
+AStore.setup_in_file(DSN)
 
 input_data = json.loads(open(sys.argv[1]).read())
 for i, entry in enumerate(input_data.values(), start=1):
     print('processing %s of %s' % (i, len(input_data)))
-    d = {
-        'timestamp': datetime.datetime.fromtimestamp(entry.pop('timestamp')/1000),
-    }
-    for k in 'uri title text'.split():
-        d[k] = entry.pop(k)
+    d = entry.copy()
+    d.update({
+        'timestamp': datetime.datetime.fromtimestamp(entry['timestamp']/1000),
+        'user': entry.get('user') or AStore.CURRENT_USER_ID,
+    })
     a = AModel.Annotation()
-    a.from_dict(entry)
-    for k in d:
-        setattr(a, k, d[k])
-    AModel.session.add(a)
-AModel.session.commit()
+    a.from_dict(d)
+
+    AStore.session.add(a)
+AStore.session.commit()
 
