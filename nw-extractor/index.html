@@ -72,7 +72,7 @@ process.stdout.write("\n\n");
 // hacky way to get the book title
 // this is global!!!
 var book_title;
-glob(path.join(BOOK_TMP_DIR, "*/metadata.opf"), function(err, file_list) {
+glob(path.join(BOOK_TMP_DIR, "*.opf"), function(err, file_list) {
     var title_btag = "<dc:title>";
     var title_etag = "</dc:title>";
     var txt = fs.readFileSync(file_list[0], "utf-8");
@@ -346,7 +346,7 @@ var spine_map = {};
 var html_map = {};
 var annot_map = {};
 var failure_list = [];
-glob(path.join(BOOK_TMP_DIR, "*/text/part*.html"), function(err, file_list) {
+glob(path.join(BOOK_TMP_DIR, "text/*.html"), function(err, file_list) {
     file_list.sort();
     for(var file_index=0; file_index<file_list.length; ++file_index) {
         var filepath = file_list[file_index];
