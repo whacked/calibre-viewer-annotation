@@ -450,7 +450,7 @@ def annotation():
     ctx = EasyDict()
     asdf
     annot_resultset = json.loads(AStore.search_annotations(
-        #uri = "epub://" + href,
+        #uri = AModel.Annotation.make_uri(href),
         #title = self.book_title,
         title = '%',
     ))

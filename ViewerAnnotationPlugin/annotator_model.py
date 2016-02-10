@@ -1,6 +1,16 @@
 # almost exactly as
 # https://github.com/nickstenning/annotator-store-flask/blob/89b3037b995f094f73f24037123c0e818036e36c/annotator/model.py
 
+# <path_hack>
+# PATH HACK!!!
+# this is to allow calibre to include the local install of sqlalchemy.
+# don't know how to bundle them nicely inside the plugin directory alone.
+import os, sys
+import os.path as _p
+# CHANGE THIS:
+sys.path.insert(0, _p.expanduser("/usr/lib/python2.7/dist-packages"))
+# </path_hack>
+
 import datetime
 import sqlalchemy as sqla
 from sqlalchemy.ext.declarative import declarative_base
@@ -28,13 +38,36 @@ class Annotation(Base, DBMixin):
     __tablename__ = 'annotation'
 
     id     = Column(Integer, primary_key=True)
+    # (official, but reappropriated) source document's URI;
+    # in this case, it is a custom URI for a file within an ebook,
+    # which is assumed to be an epub
     uri    = Column(Text)
+    # (unofficial) title of the book
     title  = Column(Text)
-    # TODO: need a 'quote' field
+    # (officlal) "the text that was annotated", i.e. original text from the
+    # book
+    quote  = Column(Text)
+    # (officlal) "the 'content' of annotation", i.e. the attached comment from
+    # the user
     text   = Column(Text)
+    # (official) who annotated it. currently it's just you
     user   = Column(Text)
+    # (unofficial) this came from the annotator-store reference ~2010 to store
+    # all non-official data.  it will be a candidate for deprecation in the
+    # future, but while the model is still small, it is easy to work with.
     extras = Column(Text, default=u'{}')
-    timestamp = Column(DateTime, default=datetime.datetime.now)
+    
+    # (official)
+    created = Column(DateTime, default=datetime.datetime.now)
+    updated = Column(DateTime, default=datetime.datetime.now)
+
+    @classmethod
+    def make_uri(self, local_uri, ebook_format='epub'):
+        '''
+        (convenience method) constructs an ebook file relative URI,
+        e.g. epub://page0022.html
+        '''
+        return '{}://{}'.format(ebook_format, local_uri)
 
     def authorise(self, action, user=None):
         # If self.user is None, all actions are allowed
@@ -77,16 +110,17 @@ class Annotation(Base, DBMixin):
                 range.from_dict(range_data)
                 self.ranges.append(range)
 
-    def to_dict(self, deep={}, exclude=[]):
-        result = {
-            'ranges': []
-        }
-        for k, v in self.__dict__.iteritems():
-            if k.startswith('_'): continue
-            result[k] = v
-        for rg in self.ranges:
-            result['ranges'].append(rg.to_dict())
-        return result
+    def to_dict(self):
+        # process extras and ranges first
+        out = json.loads(self.extras or '{}')
+        out['ranges'] = [rg.to_dict() for rg in self.ranges]
+        # process the rest
+        for c in self.__table__.c:
+            if c.name in out:
+                continue
+            else:
+                out[c.name] = getattr(self, c.name)
+        return out
 
     def delete(self, *args, **kwargs):
         for r in self.ranges:
@@ -94,7 +128,7 @@ class Annotation(Base, DBMixin):
         self._session.delete(self)
 
     def __repr__(self):
-        return '<Annotation %s "%s">' % (self.id, self.text)
+        return '<Annotation %s "%s">' % (self.id, self.quote)
 
 class Range(Base, DBMixin):
     __tablename__ = 'range'
@@ -121,8 +155,9 @@ class Range(Base, DBMixin):
             setattr(self, c.name, dc.get(c.name))
 
     def to_dict(self):
-        return dict((k,v) for k,v in self.__dict__.iteritems()
-                if not k.startswith('_'))
+        return dict((c.name, getattr(self, c.name))
+                for c in self.__table__.c
+                if not c.name == 'annotation')
 
 # NOT USED, but see
 # http://docs.annotatorjs.org/en/v1.2.x/authentication.html

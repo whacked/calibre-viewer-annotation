@@ -66,6 +66,7 @@ def create_annotation(dict_of_request_json):
     dict_of_request_json[u"user"] = CURRENT_USER_ID
     annotation = Annotation()
     annotation.from_dict(dict_of_request_json)
+    session.add(annotation)
     session.commit()
 
     return jsonify(annotation.to_dict())
@@ -92,6 +93,7 @@ def update_annotation(id, dict_of_request_json):
     else:
     # elif request.json and annotation.authorise('update', get_current_userid()):
         annotation.from_dict(dict_of_request_json)
+        session.add(annotation)
         session.commit()
         return jsonify(annotation.to_dict())
 
