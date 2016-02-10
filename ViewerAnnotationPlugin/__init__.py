@@ -58,7 +58,7 @@ class AnnotationTOC(TOC):
                 for row in annot_resultset["rows"]:
                     annot = json.loads(AStore.read_annotation(str(row["id"])))
                     frag = (annot["uri"] + "#").split("#")[1]
-                    text = annot.get("text") or "(highlight)"
+                    text = annot.get("quote") or "(highlight)"
                 
                     toc.append(MetaTOC(
                         href = href,
