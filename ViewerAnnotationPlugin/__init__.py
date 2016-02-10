@@ -50,7 +50,7 @@ class AnnotationTOC(TOC):
             base_path, href = os.path.split(spine)
             dlog('updating annotation list for %s' % self.book_title)
             annot_resultset = json.loads(AStore.search_annotations(
-                uri = "epub://" + href,
+                uri = AModel.Annotation.make_uri(href),
                 title = self.book_title,
             ))
             # dlog('searching for: %s/%s' % (base_path, href))
@@ -316,13 +316,13 @@ class ViewerAnnotationPlugin(ViewerPlugin):
 
                  // Attach the uri of the current page to all annotations to allow search.
                  , annotationData: {
-                   'uri': 'epub://%(href)s'
+                   'uri': '%(uri)s'
                  }
                  , loadFromSearch: {
-                     'uri': 'epub://%(href)s'
+                     'uri': '%(uri)s'
                  }
                });
-            ''' % dict(href = href))
+            ''' % dict(uri = AModel.Annotation.make_uri(href)))
 
     def load_javascript(self, evaljs):
         '''

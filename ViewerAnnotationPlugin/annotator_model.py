@@ -35,6 +35,13 @@ class Annotation(Base, DBMixin):
     user   = Column(Text)
     extras = Column(Text, default=u'{}')
     timestamp = Column(DateTime, default=datetime.datetime.now)
+    @classmethod
+    def make_uri(self, local_uri, ebook_format='epub'):
+        '''
+        (convenience method) constructs an ebook file relative URI,
+        e.g. epub://page0022.html
+        '''
+        return '{}://{}'.format(ebook_format, local_uri)
 
     def authorise(self, action, user=None):
         # If self.user is None, all actions are allowed
