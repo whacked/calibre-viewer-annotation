@@ -2,7 +2,7 @@
 
 * adding annotation (read and write) capability to calibre's ebook-viewer
   
-  sporadic work in progress. last updated on 2016-02-07
+  sporadic work in progress. last updated on 2016-02-07 *(BREAKS EARLIER VERSION, see below)*
 
   *WARNING: if you have used this before, and are planning to update, please backup your highlights database before updating*
 
@@ -32,6 +32,8 @@
 
 * installing+using the plugin
 
+  *this part is not yet tested following the model update*
+
   With calibre 2 this is considerably easier, but this plugin is *NOT*
   pre-packaged and ready to use. This is the only method I'm familiar
   with now. A quick step by step:
@@ -51,10 +53,9 @@
      
 * importing annotations
 
-  as of now, this is a harder problem. my next investigation in this
-  area will follow things discussed below like in
-  =AnnotationProcessor.py= and =anchortext.py=
-  
+  harder problem. but see [[https://github.com/whacked/calibre-viewer-annotation/tree/nwapp-annotation-import][nwapp branch]] for progress on importing text
+  from kindle notes
+
 * development
   
   The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
@@ -89,6 +90,17 @@
 
    see =store.coffee=; =store.js= is derived from =coffee --compile store.coffee=
    then moved into =ViewerAnnotationPlugin=
+
+* breaking changes
+
+  while breaking, the data model is mostly the same.
+  
+  if you actually need to migrate, consider using a csv export then import, or some combination of =ALTER= on your database
+
+** 2016-02-09
+
+   - (TODO) supercede common =Annotation.text= usage with =Annotation.quote=
+   - elixir removed, thus elixir-generated table names are probably no longer valid (=annotator_model_range= etc)
 
 * issues
 
