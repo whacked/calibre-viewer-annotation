@@ -9,11 +9,22 @@ require 'io/console'
 require 'kindle_highlights'
 
 def setup
-  puts 'amazon account email: '
-  email = STDIN.gets.strip
-  puts 'amazon account password:'
-  passwd = STDIN.noecho(&:gets).strip
-  KindleHighlights::Client.new(email, passwd)
+  # for development convenience this will credentials from ~/.aws/kindle
+  # THIS IS NOT RECOMMENDED!
+  cred_filepath = File.join(Dir.home, '.aws', 'kindle')
+  if File.exists? cred_filepath then
+    puts 'loading from credentials file...'
+    cred = JSON.parse File.read cred_filepath
+    email = cred['email']
+    passw = cred['password']
+  else
+    puts 'amazon account email: '
+    email = gets.chomp
+    puts 'amazon account password:'
+    passw = STDIN.noecho(&:gets).chomp
+  end
+
+  KindleHighlights::Client.new(email, passw)
 end
 
 def make_output_filename(book_name)
