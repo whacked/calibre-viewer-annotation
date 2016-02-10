@@ -30,10 +30,8 @@ from calibre_plugins.viewer_annotation import annotator_model as AModel
 from calibre_plugins.viewer_annotation import annotator_store as AStore
 from calibre_plugins.viewer_annotation.config import prefs
 
-AModel.metadata.bind = 'sqlite:///%s' % prefs['annotator_db_path']
-# Create tables
-# NOTE: this is needed to trigger elixir's binding of `query` to model objects
-AModel.setup_all(True)
+# init database + create tables if not exist
+AStore.setup_database('sqlite:///%s' % prefs['annotator_db_path'])
 
 DEBUG_LEVEL = 10
 def dlog(*s):
