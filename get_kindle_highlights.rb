@@ -7,6 +7,7 @@
 require 'yaml'
 require 'io/console'
 require 'kindle_highlights'
+require 'nokogiri'
 
 def setup
   # for development convenience this will credentials from ~/.aws/kindle
@@ -76,6 +77,65 @@ def save(basedir, k, id)
   ofile = File.join(basedir, make_output_filename(k.books[id]))
   File.open(ofile, 'w') {|f| f.write(d.to_yaml)}
   "ok: #{ofile}"
+end
+
+def download_for_asin(kindle, asin)
+  # it turns out highlights_for calls some internal Amazon API, which doesn't
+  # itself return notes; therefore, we need to call and parse from
+  # https://kindle.amazon.com/your_highlights_and_notes/
+  # However, your_highlights_and_notes doesn't the timestamp, so we need call
+  # both, and combine them.
+
+  # first retrieve the highlight list.
+  highlight_list = kindle.highlights_for(asin)
+  
+  # extract the mechanize client out of the kindle client
+  mech = kindle.instance_variable_get(:@mechanize_agent)
+  endpoint = "https://kindle.amazon.com/your_highlights_and_notes/#{asin}"
+
+  highlights_and_notes_page = mech.get(endpoint)
+  # realistically, we expect each endLocation to appear only once,
+  # because why would you create 2 highlights to the same passage
+  # ending, but you never know, so we'll make a
+  # Hash[endLocation => highlight]
+  endLocation_mapping = highlight_list.inject({}) do |out, highlight_entry|
+    endLocation = highlight_entry['endLocation']
+    if not out.include? endLocation then
+      out[endLocation] = []
+    end
+    out[endLocation].push(highlight_entry)
+    out
+  end
+
+  npage = Nokogiri::HTML(highlights_and_notes_page.body)
+  npage.css('.highlightRow.yourHighlight').each do |html_entry|
+    # need to match the endLocation => highlight mapping to be a hit
+    highlight = html_entry.css('.highlight').text
+    endLocation = html_entry.css('.hidden.end_location').text.to_i
+
+    if not endLocation_mapping.include? endLocation then
+      puts('WARNING! MISMATCH OF endLocation FOUND!!!')
+      puts("searched for #{endLocation}")
+      puts("among: #{endLocation_mapping.keys}")
+      next
+    end
+
+    note_text = html_entry.css('.noteContent').text
+    if note_text.length == 0 then
+      next
+    end
+
+    endLocation_mapping[endLocation].each do |highlight_entry|
+      if highlight_entry['highlight'] == highlight then
+        # exact match!!!
+        # puts("modifying entry with note!")
+        highlight_entry['note'] = note_text
+        break
+      end
+    end
+  end
+
+  highlight_list
 end
 
 if __FILE__ == $0
