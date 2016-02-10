@@ -155,8 +155,9 @@ class Range(Base, DBMixin):
             setattr(self, c.name, dc.get(c.name))
 
     def to_dict(self):
-        return dict((k,v) for k,v in self.__dict__.iteritems()
-                if not k.startswith('_'))
+        return dict((c.name, getattr(self, c.name))
+                for c in self.__table__.c
+                if not c.name == 'annotation')
 
 # NOT USED, but see
 # http://docs.annotatorjs.org/en/v1.2.x/authentication.html
