@@ -272,14 +272,18 @@ class ViewerAnnotationPlugin(ViewerPlugin):
         self.annotation_toc.setVisible(yes)
 
     def annotation_toc_clicked(self, index, force=False):
+        from calibre.gui2 import error_dialog
         if force or QApplication.mouseButtons() & Qt.LeftButton:
             item = self._view.annotation_toc_model.itemFromIndex(index)
             if item.bookmark:
                 self._view.goto_bookmark(item.bookmark)
             else:
-                return error_dialog(self, _('No such location'),
-                        _('The location pointed to by this item'
-                            ' does not exist.'), det_msg=item.fragment or "no location saved", show=True)
+                return error_dialog(None,
+                                    _('No such location'),
+                                    _('The location pointed to by this item'
+                                      ' does not exist.'),
+                                      det_msg=item.fragment or "no location saved",
+                                      show=True)
         self._view.setFocus(Qt.OtherFocusReason)
 
     def run_javascript(self, evaljs):
