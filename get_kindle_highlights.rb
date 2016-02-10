@@ -11,20 +11,56 @@ require 'kindle_highlights'
 def setup
   # for development convenience this will credentials from ~/.aws/kindle
   # THIS IS NOT RECOMMENDED!
-  cred_filepath = File.join(Dir.home, '.aws', 'kindle')
-  if File.exists? cred_filepath then
-    puts 'loading from credentials file...'
-    cred = JSON.parse File.read cred_filepath
-    email = cred['email']
-    passw = cred['password']
+  #
+  # in addition, the kindle config file can contain an 'ignore' key, which
+  # should map to an array of strings to match against.  After the
+  # (Hash)`books` is populated, each key => value in the Hash will get matched
+  # against the entries within the 'ignore' array; if key OR value matches the
+  # ignore entry, the key => value is removed from the (Hash)`books`.
+  #
+  # the entries in 'ignore' are treated as regex if they start and end with
+  # a slash; i.e. in
+  # ["Some title", "B000ASIN123", "/.000ASIN0.+/"]
+  # we will have 2 exact tests and 1 regex test
+  kindle_config_filepath = File.join(Dir.home, '.aws', 'kindle')
+  if File.exists? kindle_config_filepath then
+    puts 'loading from config file...'
+    conf = JSON.parse File.read kindle_config_filepath
+    email = conf['email']
+    passw = conf['password']
+    ignore = conf['ignore'] or []
   else
     puts 'amazon account email: '
     email = gets.chomp
     puts 'amazon account password:'
     passw = STDIN.noecho(&:gets).chomp
+    ignore = []
   end
 
-  KindleHighlights::Client.new(email, passw)
+  kindle = KindleHighlights::Client.new(email, passw)
+  
+  # process ignore
+  kindle.books.each {|asin, title|
+    for matcher in ignore do
+      is_found = false
+      for test_string in [asin, title] do
+        if matcher.length > 2 and matcher[0] == '/' and matcher[0] == matcher[-1] then
+          is_found = Regexp.new(matcher[1...-1]).match(test_string)
+        else
+          is_found = matcher == test_string
+        end
+        if is_found then
+          break
+        end
+      end
+
+      if is_found then
+        kindle.books.delete asin
+      end
+    end
+  }
+
+  return kindle
 end
 
 def make_output_filename(book_name)
