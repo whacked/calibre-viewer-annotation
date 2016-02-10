@@ -70,7 +70,7 @@ CREATE TABLE annotation (
 	uri TEXT,
 	title TEXT,
 	text TEXT,
-  quote TEXT,
+	quote TEXT,
 	user TEXT,
 	extras TEXT,
 	created DATETIME,
