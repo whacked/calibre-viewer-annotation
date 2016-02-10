@@ -33,7 +33,7 @@ from calibre_plugins.viewer_annotation.config import prefs
 # init database + create tables if not exist
 AStore.setup_database('sqlite:///%s' % prefs['annotator_db_path'])
 
-DEBUG_LEVEL = 10
+DEBUG_LEVEL = 0
 def dlog(*s):
     if DEBUG_LEVEL == 0:
         return
