@@ -28,13 +28,29 @@ class Annotation(Base, DBMixin):
     __tablename__ = 'annotation'
 
     id     = Column(Integer, primary_key=True)
+    # (official, but reappropriated) source document's URI;
+    # in this case, it is a custom URI for a file within an ebook,
+    # which is assumed to be an epub
     uri    = Column(Text)
+    # (unofficial) title of the book
     title  = Column(Text)
-    # TODO: need a 'quote' field
+    # (officlal) "the text that was annotated", i.e. original text from the
+    # book
+    quote  = Column(Text)
+    # (officlal) "the 'content' of annotation", i.e. the attached comment from
+    # the user
     text   = Column(Text)
+    # (official) who annotated it. currently it's just you
     user   = Column(Text)
+    # (unofficial) this came from the annotator-store reference ~2010 to store
+    # all non-official data.  it will be a candidate for deprecation in the
+    # future, but while the model is still small, it is easy to work with.
     extras = Column(Text, default=u'{}')
-    timestamp = Column(DateTime, default=datetime.datetime.now)
+    
+    # (official)
+    created = Column(DateTime, default=datetime.datetime.now)
+    updated = Column(DateTime, default=datetime.datetime.now)
+
     @classmethod
     def make_uri(self, local_uri, ebook_format='epub'):
         '''
@@ -101,7 +117,7 @@ class Annotation(Base, DBMixin):
         self._session.delete(self)
 
     def __repr__(self):
-        return '<Annotation %s "%s">' % (self.id, self.text)
+        return '<Annotation %s "%s">' % (self.id, self.quote)
 
 class Range(Base, DBMixin):
     __tablename__ = 'range'
