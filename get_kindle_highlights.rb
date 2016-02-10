@@ -79,7 +79,7 @@ def save(basedir, k, id)
   "ok: #{ofile}"
 end
 
-def download_for_asin(kindle, asin)
+def get_combined_annotation_list(kindle, asin)
   # it turns out highlights_for calls some internal Amazon API, which doesn't
   # itself return notes; therefore, we need to call and parse from
   # https://kindle.amazon.com/your_highlights_and_notes/
