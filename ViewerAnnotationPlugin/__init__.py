@@ -30,12 +30,10 @@ from calibre_plugins.viewer_annotation import annotator_model as AModel
 from calibre_plugins.viewer_annotation import annotator_store as AStore
 from calibre_plugins.viewer_annotation.config import prefs
 
-AModel.metadata.bind = 'sqlite:///%s' % prefs['annotator_db_path']
-# Create tables
-# NOTE: this is needed to trigger elixir's binding of `query` to model objects
-AModel.setup_all(True)
+# init database + create tables if not exist
+AStore.setup_database('sqlite:///%s' % prefs['annotator_db_path'])
 
-DEBUG_LEVEL = 10
+DEBUG_LEVEL = 0
 def dlog(*s):
     if DEBUG_LEVEL == 0:
         return
@@ -52,7 +50,7 @@ class AnnotationTOC(TOC):
             base_path, href = os.path.split(spine)
             dlog('updating annotation list for %s' % self.book_title)
             annot_resultset = json.loads(AStore.search_annotations(
-                uri = "epub://" + href,
+                uri = AModel.Annotation.make_uri(href),
                 title = self.book_title,
             ))
             # dlog('searching for: %s/%s' % (base_path, href))
@@ -60,7 +58,7 @@ class AnnotationTOC(TOC):
                 for row in annot_resultset["rows"]:
                     annot = json.loads(AStore.read_annotation(str(row["id"])))
                     frag = (annot["uri"] + "#").split("#")[1]
-                    text = annot.get("text") or "(highlight)"
+                    text = annot.get("quote") or "(highlight)"
                 
                     toc.append(MetaTOC(
                         href = href,
@@ -274,14 +272,18 @@ class ViewerAnnotationPlugin(ViewerPlugin):
         self.annotation_toc.setVisible(yes)
 
     def annotation_toc_clicked(self, index, force=False):
+        from calibre.gui2 import error_dialog
         if force or QApplication.mouseButtons() & Qt.LeftButton:
             item = self._view.annotation_toc_model.itemFromIndex(index)
             if item.bookmark:
                 self._view.goto_bookmark(item.bookmark)
             else:
-                return error_dialog(self, _('No such location'),
-                        _('The location pointed to by this item'
-                            ' does not exist.'), det_msg=item.fragment or "no location saved", show=True)
+                return error_dialog(None,
+                                    _('No such location'),
+                                    _('The location pointed to by this item'
+                                      ' does not exist.'),
+                                      det_msg=item.fragment or "no location saved",
+                                      show=True)
         self._view.setFocus(Qt.OtherFocusReason)
 
     def run_javascript(self, evaljs):
@@ -318,13 +320,13 @@ class ViewerAnnotationPlugin(ViewerPlugin):
 
                  // Attach the uri of the current page to all annotations to allow search.
                  , annotationData: {
-                   'uri': 'epub://%(href)s'
+                   'uri': '%(uri)s'
                  }
                  , loadFromSearch: {
-                     'uri': 'epub://%(href)s'
+                     'uri': '%(uri)s'
                  }
                });
-            ''' % dict(href = href))
+            ''' % dict(uri = AModel.Annotation.make_uri(href)))
 
     def load_javascript(self, evaljs):
         '''
