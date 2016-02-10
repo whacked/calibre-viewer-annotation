@@ -269,7 +269,7 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
         annotation_object = {
             uri: "epub://"+source_filepath.split(path.sep).pop(),
             title: book_title,
-            timestamp: entry.timestamp,
+            created: entry.timestamp,
             text: search_string,
             "ranges": [
                 sRange.toObject()

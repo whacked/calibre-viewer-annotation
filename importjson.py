@@ -70,7 +70,7 @@ for i, entry in enumerate(input_data.values(), start=1):
     print('processing %s of %s' % (i, len(input_data)))
     d = entry.copy()
     d.update({
-        'timestamp': datetime.datetime.fromtimestamp(entry['timestamp']/1000),
+        'created': datetime.datetime.fromtimestamp(entry['created']/1000),
         'user': entry.get('user') or AStore.CURRENT_USER_ID,
     })
     ann = AModel.Annotation()
