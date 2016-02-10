@@ -2,11 +2,14 @@
 
 * adding annotation (read and write) capability to calibre's ebook-viewer
   
-  sporadic work in progress. last updated on 2016-02-07 *(BREAKS EARLIER VERSION, see below)*
+  sporadic work in progress. last updated on 2016-02-10 *(BREAKS
+  EARLIER VERSION, see below)*
 
-  *WARNING: if you have used this before, and are planning to update, please backup your highlights database before updating*
+  *WARNING: if you have used this before, and are planning to update,
+  please backup your highlights database before updating*
 
-  this plugin is *NOT* pre-packaged and ready to use. You will need to [[*external%20dependencies%20%2B%20preparation][setup some dependencies]]
+  this plugin is *NOT* pre-packaged and ready to use. You will need to
+  setup some dependencies (see below)
 
   [[./doc/img/ss-007.png]]
   
