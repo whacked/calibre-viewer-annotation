@@ -100,16 +100,17 @@ class Annotation(Base, DBMixin):
                 range.from_dict(range_data)
                 self.ranges.append(range)
 
-    def to_dict(self, deep={}, exclude=[]):
-        result = {
-            'ranges': []
-        }
-        for k, v in self.__dict__.iteritems():
-            if k.startswith('_'): continue
-            result[k] = v
-        for rg in self.ranges:
-            result['ranges'].append(rg.to_dict())
-        return result
+    def to_dict(self):
+        # process extras and ranges first
+        out = json.loads(self.extras or '{}')
+        out['ranges'] = [rg.to_dict() for rg in self.ranges]
+        # process the rest
+        for c in self.__table__.c:
+            if c.name in out:
+                continue
+            else:
+                out[c.name] = getattr(self, c.name)
+        return out
 
     def delete(self, *args, **kwargs):
         for r in self.ranges:
