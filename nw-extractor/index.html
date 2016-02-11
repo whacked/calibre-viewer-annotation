@@ -60,6 +60,7 @@ path = require('path');
 // alternative is to extract the epub, which we are trying to avoid!
 http = require('http');
 EPub = require('epub');
+striptags = require('striptags');
 Entities = require('html-entities').AllHtmlEntities;
 
 var EPUB_PATH = gui.App.argv[0];
@@ -456,7 +457,8 @@ epub.on("end", function() {
                     break;
                 }
             } else {
-                var check_length = search_string.length*2; var offset = 0;
+                var check_length = search_string.length*2;
+                var offset = 0;
                 var safety = 1000;
                 var substring = null;
                 while(offset < corpus.length) {
@@ -473,7 +475,19 @@ epub.on("end", function() {
                     }
 
                     var found_index = offset + corpus.substr(offset).indexOf(token_list[0]);
-                    substring = corpus.substr(found_index, check_length);
+                    /**
+                     * need to get tag-stripped text up to the desired length.
+                     * we need this because it turns out the text matcher is failing because there is
+                     * text with a lot of surrounding html, which causes `check_length` in the search
+                     * loop to be hit when only a little bit of text is read! And then it thinks there
+                     * is no match and gives up.
+                     */
+                    substring = "";
+                    var end_index = found_index + check_length;
+                    while(substring.length < check_length && end_index < corpus.length) {
+                        substring = striptags(corpus.substring(found_index, end_index));
+                        end_index += check_length;
+                    }
                     if(substring.indexOf(token_list[token_list.length-1]) == -1) {
                         offset = found_index+token_list[0].length;
                         continue;
@@ -493,8 +507,7 @@ epub.on("end", function() {
                 }
             }
         }
-    });
-
+    }); // end forEach
     yml.highlight_list.forEach(function(entry) {
         if(!annot_map[entry.highlight]) {
             failure_list.push(entry.highlight);

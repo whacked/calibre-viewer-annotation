@@ -74,6 +74,8 @@
 
     - glob, html-entities, js-yaml, xpath-range
     - browserify (needed for xpath-range)
+    - epub
+    - striptags
 
 *** build xpath-range =doMagic= function
 
