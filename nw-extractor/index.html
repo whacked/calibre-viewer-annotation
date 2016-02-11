@@ -377,6 +377,7 @@ var html_map = {};
 var annot_map = {};
 var failure_list = [];
 
+
 epub.on("end", function() {
 
     // build a entry list sorted in chapter order
@@ -461,6 +462,8 @@ epub.on("end", function() {
                     annot_map[entry.highlight] = make_result(loc, 1.0, pres.href);
                     file_start_index = file_index;
                     break;
+                } else {
+                    // for debugging
                 }
             } else {
                 var check_length = search_string.length*2;
@@ -509,7 +512,6 @@ epub.on("end", function() {
                     var hit_count = get_corpus_coverage(substring, token_list);
                     var score = hit_count/token_list.length;
                     if(score > 0.7) {
-                        // console.log("FOUND! with score "+score);
                         annot_map[entry.highlight] = make_result(offset, score, pres.href);
                         file_start_index = file_index;
                         return;
