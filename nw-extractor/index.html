@@ -18,7 +18,18 @@ function EXIT(code) {
     process.exit(code || 0);
 }
 
-console.log(gui.App.argv.length);
+USAGE = "\
+\n\
+########################################\n\
+\n\
+USAGE:\n\
+\n\
+nw . PATH_TO_BOOK.epub PATH_TO_HIGHLIGHTS.yml\n\
+\n\
+########################################\n\
+\n\
+\n\
+";
 if(gui.App.argv.length < 2) {
     process.stdout.write("\n");
     process.stdout.write("    need 2 arguments:\n");
