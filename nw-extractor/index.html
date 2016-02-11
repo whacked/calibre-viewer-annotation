@@ -15,7 +15,6 @@ var CWD = process.cwd();
 var gui = require("nw.gui");
 // webserver GLOBAL
 var server;
-var server_port = 3000;
 function EXIT(code) {
     if(server) {
         server.close();
@@ -198,7 +197,7 @@ output = {};
 
 // 3. second pass
 function launch_and_find(source_filepath, entry, close_after_ms) {
-    var search_window = gui.Window.open("http://127.0.0.1:"+server_port+"/"+source_filepath, {
+    var search_window = gui.Window.open("http://127.0.0.1:"+server.address().port+"/"+source_filepath, {
         "inject-js-start": "node_modules/xpath-range/xpath-range-bundle.js",
         "inject-js-end": "js/driver.js",
         position: "mouse"
@@ -431,7 +430,8 @@ epub.on("end", function() {
                 resp.writeHead(404, {"Content-Type": "text/plain"});
                 resp.end("not found");
             }
-        }).listen(server_port, "127.0.0.1");
+        }).listen(0, "127.0.0.1");
+    }
 
     // 2. build candidate mapping
     function build_candidate_mapping() {
