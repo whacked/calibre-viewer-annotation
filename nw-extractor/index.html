@@ -380,9 +380,6 @@ epub.on("end", function() {
         }
         arr_pres.push(pres);
     });
-    arr_pres.sort(function(a, b) {
-        return a.href > b.href;
-    });
     console.log("finished processing epub manifest, length: " + arr_pres.length);
 
     function populate_entry_by_index(entry_index) {
@@ -400,6 +397,9 @@ epub.on("end", function() {
             // console.log(pres.href + " done, now length: " + Object.keys(spine_map).length);
             if(Object.keys(html_map).length == arr_pres.length) {
                 console.log("OK, READY.");
+                arr_pres.sort(function(a, b) {
+                    return a.href > b.href;
+                });
                 build_candidate_mapping();
             }
         });
