@@ -13,10 +13,21 @@
  */
 var CWD = process.cwd();
 var gui = require("nw.gui");
+// webserver GLOBAL
+var server;
+var server_port = 3000;
 function EXIT(code) {
+    if(server) {
+        server.close();
+    }
     gui.App.quit();
     process.exit(code || 0);
 }
+// was hoping this would do cleanup,
+// but this is not getting called now
+gui.App.on("close", function() {
+    EXIT();
+});
 
 USAGE = "\
 \n\
@@ -42,6 +53,10 @@ if(gui.App.argv.length < 2) {
 
 fs = require('fs');
 path = require('path');
+// we need to run a webserver in parallel unless you can figure out how
+// to open a child window with an html string (read from the epub); the
+// alternative is to extract the epub, which we are trying to avoid!
+http = require('http');
 EPub = require('epub');
 Entities = require('html-entities').AllHtmlEntities;
 
@@ -180,7 +195,7 @@ output = {};
 
 // 3. second pass
 function launch_and_find(source_filepath, entry, close_after_ms) {
-    var search_window = gui.Window.open("file://" + CWD + "/" + source_filepath, {
+    var search_window = gui.Window.open("http://127.0.0.1:"+server_port+"/"+source_filepath, {
         "inject-js-start": "node_modules/xpath-range/xpath-range-bundle.js",
         "inject-js-end": "js/driver.js",
         position: "mouse"
@@ -396,9 +411,24 @@ epub.on("end", function() {
         populate_entry_by_index(entry_index);
     }
 
+    function setup_server() {
+        console.log("starting server...");
+        server = http.createServer(function(req, resp) {
+            // strip the leading /slash
+            var filepath_candidate = req.url.substring(1);
+            if(html_map[filepath_candidate]) {
+                resp.writeHead(200, {"Content-Type": "text/html"});
+                resp.end(html_map[filepath_candidate]);
+            } else {
+                resp.writeHead(404, {"Content-Type": "text/plain"});
+                resp.end("not found");
+            }
+        }).listen(server_port, "127.0.0.1");
+
     // 2. build candidate mapping
     function build_candidate_mapping() {
         console.log("BUILDING CANDIDATE MAPPING...");
+        setup_server();
 
     var file_start_index = 0;
     yml.highlight_list.forEach(function(entry) {
