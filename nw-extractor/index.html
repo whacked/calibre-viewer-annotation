@@ -23,8 +23,10 @@ function EXIT(code) {
     gui.App.quit();
     process.exit(code || 0);
 }
+// TODO fix this
 // was hoping this would do cleanup,
 // but this is not getting called now
+// see http://stackoverflow.com/questions/30916282/electron-atom-shell-window-getting-closed-on-its-own-after-some-time
 gui.App.on("close", function() {
     EXIT();
 });
