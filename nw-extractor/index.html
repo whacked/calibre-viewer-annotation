@@ -11,31 +11,35 @@
  * TODO
  * should capture + display selection from child window for final reconcilation/manual fix
  */
-
 var CWD = process.cwd();
 var gui = require("nw.gui");
+function EXIT(code) {
+    gui.App.quit();
+    process.exit(code || 0);
+}
 
 console.log(gui.App.argv.length);
 if(gui.App.argv.length < 2) {
     process.stdout.write("\n");
     process.stdout.write("    need 2 arguments:\n");
-    process.stdout.write("    - path-to-exploded-epub\n");
+    process.stdout.write("    - path-to-epub\n");
     process.stdout.write("    - path-to-annotation-yml\n");
     process.stdout.write("\n");
-    gui.App.quit();
+    process.stdout.write(USAGE);
+    EXIT();
 }
 
 fs = require('fs');
 path = require('path');
-glob = require('glob');
+EPub = require('epub');
 Entities = require('html-entities').AllHtmlEntities;
 
-var BOOK_TMP_DIR = gui.App.argv[0];
+var EPUB_PATH = gui.App.argv[0];
 var YML_SRC_PATH = gui.App.argv[1];
 
 var should_not_proceed = false;
-if(!fs.existsSync(BOOK_TMP_DIR)) {
-    process.stdout.write("\nsupplied book directory does not exist!\n");
+if(!fs.existsSync(EPUB_PATH)) {
+    process.stdout.write("\nsupplied book does not exist!\n");
     should_not_proceed = true;
 }
 if(!fs.existsSync(YML_SRC_PATH)) {
@@ -43,7 +47,7 @@ if(!fs.existsSync(YML_SRC_PATH)) {
     should_not_proceed = true;
 }
 if(should_not_proceed) {
-    gui.App.quit();
+    EXIT();
 }
 
 // Get the current window
@@ -60,25 +64,16 @@ main_window.focus();
 // main_window.showDevTools() 
 window.addEventListener('keydown', function(evt) {
     if(evt.ctrlKey && evt.keyCode == 81) { // q
-        gui.App.quit();
+        EXIT();
     }
 });
 
 process.stdout.write("\n");
-process.stdout.write(">>> exploded epub directory: " + BOOK_TMP_DIR + "\n");
+process.stdout.write(">>> epub file: " + EPUB_PATH + "\n");
 process.stdout.write(">>> annotation yml filepath: " + YML_SRC_PATH);
 process.stdout.write("\n\n");
 
-// hacky way to get the book title
-// this is global!!!
-var book_title;
-glob(path.join(BOOK_TMP_DIR, "*.opf"), function(err, file_list) {
-    var title_btag = "<dc:title>";
-    var title_etag = "</dc:title>";
-    var txt = fs.readFileSync(file_list[0], "utf-8");
-    book_title = txt.substring(txt.indexOf(title_btag)+title_btag.length, txt.indexOf(title_etag));
-});
-
+var epub = new EPub(EPUB_PATH, "imagewebroot_ignore", "chapterwebroot_ignore");
 </script>
 <style>
 td.yes-found {
@@ -268,9 +263,9 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
         // THIS IS WHAT WE'VE BEEN WAITING FOR!
         annotation_object = {
             uri: "epub://"+source_filepath.split(path.sep).pop(),
-            title: book_title,
+            title: epub.metadata.title,
             created: entry.timestamp,
-            text: search_string,
+            quote: search_string,
             "ranges": [
                 sRange.toObject()
             ],
@@ -346,16 +341,54 @@ var spine_map = {};
 var html_map = {};
 var annot_map = {};
 var failure_list = [];
-glob(path.join(BOOK_TMP_DIR, "text/*.html"), function(err, file_list) {
-    file_list.sort();
-    for(var file_index=0; file_index<file_list.length; ++file_index) {
-        var filepath = file_list[file_index];
-        html_map[filepath] = fs.readFileSync(filepath, "utf-8");
-        // console.log("read: " + html_map[filepath].length + " bytes from " + filepath);
-        spine_map[filepath] = file_index+1;
+
+console.log(epub);
+console.log(epub.manifest);
+epub.on("end", function() {
+
+    // build a entry list sorted in chapter order
+    // array of manifest's `publication resources`
+    var arr_pres = [];
+    Object.keys(epub.manifest).forEach(function(key) {
+        var pres = epub.manifest[key];
+        if(!pres.href.match(/\.htm.+$/)) {
+            return;
+        }
+        arr_pres.push(pres);
+    });
+    arr_pres.sort(function(a, b) {
+        return a.href > b.href;
+    });
+    console.log("finished processing epub manifest, length: " + arr_pres.length);
+
+    function populate_entry_by_index(entry_index) {
+        var pres = arr_pres[entry_index];
+        // console.log("proc arr pres... " + entry_index + " " + pres.id + ", " + pres.href);
+        // note we used to do
+        // html_map[filepath] = fs.readFileSync(filepath, "utf-8");
+        // which is now replaced by the `getFile` block
+        // this is now implicit because `epub` only supports utf-8
+        // (see https://github.com/julien-c/epub)
+        epub.getFile(pres.id, function(err, data, mimetype) {
+            // console.log("read: " + data.length + " bytes from " + pres.href);
+            html_map[pres.href] = data.toString('utf8');
+            spine_map[pres.href] = entry_index+1;
+            // console.log(pres.href + " done, now length: " + Object.keys(spine_map).length);
+            if(Object.keys(html_map).length == arr_pres.length) {
+                console.log("OK, READY.");
+                build_candidate_mapping();
+            }
+        });
+    }
+
+    for(var entry_index=0; entry_index<arr_pres.length; ++entry_index) {
+        populate_entry_by_index(entry_index);
     }
 
     // 2. build candidate mapping
+    function build_candidate_mapping() {
+        console.log("BUILDING CANDIDATE MAPPING...");
+
     var file_start_index = 0;
     yml.highlight_list.forEach(function(entry) {
         var search_string = clean_string(entry.highlight);
@@ -365,15 +398,15 @@ glob(path.join(BOOK_TMP_DIR, "text/*.html"), function(err, file_list) {
         // annotation entry iteration we will exclude all files processed prior
         // to the latest match
         var file_index = file_start_index;
-        for(var file_index = file_start_index; file_index<file_list.length; ++file_index) {
-            var filepath = file_list[file_index];
-            var corpus = html_map[filepath];
+        for(var file_index = file_start_index; file_index<arr_pres.length; ++file_index) {
+            var pres = arr_pres[file_index];
+            var corpus = html_map[pres.href];
             var token_list = search_string.split(/\s+/);
             if(token_list.length < 4) {
                 // direct match
                 var loc = corpus.indexOf(search_string)
                 if(loc > -1) {
-                    annot_map[entry.highlight] = make_result(loc, 1.0, filepath);
+                    annot_map[entry.highlight] = make_result(loc, 1.0, pres.href);
                     file_start_index = file_index;
                     break;
                 }
@@ -406,7 +439,7 @@ glob(path.join(BOOK_TMP_DIR, "text/*.html"), function(err, file_list) {
                     var score = hit_count/token_list.length;
                     if(score > 0.7) {
                         // console.log("FOUND! with score "+score);
-                        annot_map[entry.highlight] = make_result(offset, score, filepath);
+                        annot_map[entry.highlight] = make_result(offset, score, pres.href);
                         file_start_index = file_index;
                         break;
                     } else {
@@ -427,7 +460,7 @@ glob(path.join(BOOK_TMP_DIR, "text/*.html"), function(err, file_list) {
 
     // results display
     var tbl = $("table");
-    var key_list = ["check?", "timestamp", "location", "found?", "highlight", "verification"];
+    var key_list = ["check?", "timestamp", "location", "found?", "highlight", "note", "verification"];
     var monster_list = [];
     yml.highlight_list.forEach(function(entry) {
         if(tbl.children().length == 0) {
@@ -502,10 +535,12 @@ glob(path.join(BOOK_TMP_DIR, "text/*.html"), function(err, file_list) {
         }, interval_time);
     }).insertAfter(tbl);
 
+    } // build_candidate_mapping
+
 
 });
-
-        });
+epub.parse();
+        }); // end document.ready
 
     </script>
 </body>
