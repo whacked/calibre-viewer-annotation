@@ -82,23 +82,87 @@ def add_extra(self, dc):
     return self.extras
 
 input_data = json.loads(open(sys.argv[1]).read())
-for i, entry in enumerate(input_data.values(), start=1):
-    print('processing %s of %s' % (i, len(input_data)))
+html_parser = HTMLParser.HTMLParser()
+
+title_set = set(entry['title'] for entry in input_data.values())
+print('unique titles found in input data:')
+for title in title_set:
+    print('  - %s' % title)
+
+# cache existing annotations so we don't create duplicates
+sql = sqla.select([AModel.Annotation.title, AModel.Annotation.quote, AModel.Annotation.id]) \
+        .where(sqla.or_(
+            *[AModel.Annotation.title == title for title in title_set]))
+
+quote_cache = {}
+for row in AStore.session.execute(sql).fetchall():
+    quote_cache[(row['title'], row['quote'])] = row['id']
+
+# preprocess to prune the cache, as we will do full fuzzy matching
+# on the whole cache in a 2nd pass
+remain = []
+for pair in input_data.iteritems():
+    quote_key, entry = pair
+
+    unescaped_quote = html_parser.unescape(quote_key)
+    # for debugging... this should never execute because
+    # presumably entry['quote'] = entities.decode(quote_key)
+    # where `entities` is npm('html-entities')::Entities
+    if unescaped_quote != entry['quote']:
+        print('>> key: %s' % quote_key)
+        print('>> js : %s' % entry['quote'])
+        print('>> py : %s' % unescaped_quote)
+        sys.exit()
+    cache_key = (entry['title'], quote_key)
+    ann_id = quote_cache.get(cache_key)
+    if ann_id is not None:
+        # pop it so fuzzy search doesn't try to use it later
+        quote_cache.pop(cache_key)
+    else:
+        remain.append(pair)
+
+print('%s of %s assumed already existing and skipped' % (len(input_data)-len(remain), len(input_data)))
+
+MATCH_PERCENT_THRESHOLD = 80
+
 nadded = 0
+for i, (quote_key, entry) in enumerate(remain, start=1):
+    print('processing %s of %s' % (i, len(remain)))
     d = entry.copy()
     d.update({
-        'created': datetime.datetime.fromtimestamp(entry['created']/1000),
+        'created': entry.get('created') \
+                and datetime.datetime.fromtimestamp(entry['created']/1000)
+                or datetime.datetime.now(),
         'user': entry.get('user') or AStore.CURRENT_USER_ID,
     })
+
+    cache_key = (entry['title'], quote_key)
+    is_found = False
+    # fuzzy search
+    for saved_pair in quote_cache:
+        saved_title, saved_quote = saved_pair
+        if saved_title != entry['title']:
+            continue
+        if fuzz.ratio(saved_quote, quote_key) > MATCH_PERCENT_THRESHOLD:
+            print 'found match!'
+            print '    O:',quote_key
+            print '    N:',saved_quote
+            is_found = True
+            quote_cache.pop(saved_pair)
+            break
+    if is_found:
+        continue
+
+    print '='*60
+    print 'NO MATCH: ', quote_key
+
     ann = AModel.Annotation()
     ann.from_dict(d)
 
     corpus_key = uri2key.get(ann.uri)
     if corpus_key:
         anc = at.make_anchor(
-                # TODO should be quote
-                ann.text,
-
+                ann.quote,
                 ann.ranges[0].startOffset,
                 corpus_key,
                 corpus,
@@ -119,3 +183,5 @@ if DRY_RUN:
 else:
     print('APPLIED')
 
+# remainder
+pp(quote_cache)
