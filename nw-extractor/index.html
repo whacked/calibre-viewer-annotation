@@ -450,7 +450,10 @@ epub.on("end", function() {
             var token_list = search_string.split(/\s+/);
             if(token_list.length < 4) {
                 // direct match
-                var loc = corpus.indexOf(search_string)
+                // strip non-characters to improve matching chance
+                // there is text enclosed in tags, and the punctuation after it isn't!
+                // a smarter version might do char-by-char.
+                var loc = corpus.indexOf(search_string.replace(/^\W+/g, "").replace(/\W+$/g, ""))
                 if(loc > -1) {
                     annot_map[entry.highlight] = make_result(loc, 1.0, pres.href);
                     file_start_index = file_index;
