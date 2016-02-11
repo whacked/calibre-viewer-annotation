@@ -23,10 +23,12 @@ is derived from the `highlight` string but is preprocessed to have HTML entities
 converted. See file:nw-extractor/index.html:clean_string() for details.
 
 '''
-import sys
 
+DRY_RUN = True
+
+import sys
 if len(sys.argv) < 2:
-    print __doc__
+    print(__doc__)
     sys.exit()
 
 import json
@@ -78,6 +80,7 @@ def add_extra(self, dc):
 input_data = json.loads(open(sys.argv[1]).read())
 for i, entry in enumerate(input_data.values(), start=1):
     print('processing %s of %s' % (i, len(input_data)))
+nadded = 0
     d = entry.copy()
     d.update({
         'created': datetime.datetime.fromtimestamp(entry['created']/1000),
@@ -98,6 +101,17 @@ for i, entry in enumerate(input_data.values(), start=1):
                 )
         add_extra(ann, dict(anchor = anc.to_dict()))
 
-    AStore.session.add(ann)
-AStore.session.commit()
+    nadded += 1
+    if not DRY_RUN:
+        AStore.session.add(ann)
+
+if nadded > 0 and not DRY_RUN:
+    AStore.session.commit()
+
+print('-'*40)
+print('final report: %s added.' % nadded)
+if DRY_RUN:
+    print('DRY RUN FINISHED')
+else:
+    print('APPLIED')
 
