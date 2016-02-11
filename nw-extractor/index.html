@@ -334,6 +334,9 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
                 }
             }
         }
+        if(entry.note) {
+            annotation_object.note = entry.note;
+        }
         if(annotation_object) {
             output[entry.highlight] = annotation_object;
             if(close_after_ms != null) {
