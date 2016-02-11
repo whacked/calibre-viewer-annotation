@@ -487,8 +487,13 @@ epub.on("end", function() {
                      */
                     substring = "";
                     var end_index = found_index + check_length;
-                    while(substring.length < check_length && end_index < corpus.length) {
+                    // allow it to overshoot the max length once, i.e. read until end of string
+                    // if check_length exceeds the corpus length
+                    while(substring.length < check_length) {
                         substring = striptags(corpus.substring(found_index, end_index));
+                        if(end_index > corpus.length) {
+                            break;
+                        }
                         end_index += check_length;
                     }
                     if(substring.indexOf(token_list[token_list.length-1]) == -1) {
