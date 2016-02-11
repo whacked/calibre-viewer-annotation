@@ -58,7 +58,7 @@
   area will follow things discussed below like in
   =AnnotationProcessor.py= and =anchortext.py=
   
-** update 2014-11-28
+** update 2016-02-10
 
    prelim importer logic. very hacky. briefly:
 
@@ -68,7 +68,7 @@
 
     verify that it runs via =nw=
 
-   inside nw-extractor
+   inside =nw-extractor=
 
 *** npm install
 
@@ -120,15 +120,9 @@
 
      see =get_kindle_highlights.rb=, set your amazon email and password, then use it to generate yml files for import
      
-*** get exploded epub directory
-
-    this is generated when ebook-viewer runs. you can just =cp -r= the dir.
-
-    or you can run the =nw-extractor= while ebook-viewer runs...
-
 *** running the node-webkit app
 
-    =$RUNCOMMAND= =path-to-exploded-epub-dir= =path-to-highlight-yml=
+    =nw . path_to_book.epub path_to_highlight.yml=
 
 **** check the highlights + click the =test= button to see if it works
 
