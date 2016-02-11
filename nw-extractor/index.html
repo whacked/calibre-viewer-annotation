@@ -467,8 +467,9 @@ epub.on("end", function() {
                 var offset = 0;
                 var safety = 1000;
                 var substring = null;
+                var niter = 0;
                 while(offset < corpus.length) {
-                    if(safety-- < 0) {
+                    if(++niter > safety) {
                         console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
                         console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
                         console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
