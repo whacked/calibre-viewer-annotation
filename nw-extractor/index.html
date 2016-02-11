@@ -511,7 +511,7 @@ epub.on("end", function() {
                         // console.log("FOUND! with score "+score);
                         annot_map[entry.highlight] = make_result(offset, score, pres.href);
                         file_start_index = file_index;
-                        break;
+                        return;
                     } else {
                         offset = found_index+token_list[0].length;
                     }
