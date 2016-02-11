@@ -32,6 +32,7 @@ if len(sys.argv) < 2:
     sys.exit()
 
 import json
+import sqlalchemy as sqla
 # path hack... to bypass calibre import needed in the plugin
 sys.path.append('ViewerAnnotationPlugin')
 import annotator_model as AModel
@@ -40,6 +41,9 @@ import os
 import datetime
 import bookreader as bkr
 import anchortext as at
+import HTMLParser # for html entities
+from pprint import pprint as pp
+from fuzzywuzzy import fuzz
 
 json_filepath = sys.argv[1].strip()
 
