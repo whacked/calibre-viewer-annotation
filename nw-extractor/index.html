@@ -356,6 +356,10 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
 
 }
 
+function get_numeric(s) {
+    return parseFloat(s.replace(/\D/g, ""));
+}
+
 /**
  * globals for caching useful data.
  * TODO XXX not sure about spine_map yet --
@@ -398,7 +402,7 @@ epub.on("end", function() {
             if(Object.keys(html_map).length == arr_pres.length) {
                 console.log("OK, READY.");
                 arr_pres.sort(function(a, b) {
-                    return a.href > b.href;
+                    return get_numeric(a.href) - get_numeric(b.href);
                 });
                 build_candidate_mapping();
             }
