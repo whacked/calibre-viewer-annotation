@@ -440,7 +440,7 @@ sys.path.insert(0, 'ViewerAnnotationPlugin')
 import annotator_store as AStore
 import annotator_model as AModel
 
-AStore.setup_in_file('sqlite:///test.db')
+AStore.setup_database('sqlite:///test.db')
 
 @app.route('/store/annotations')
 def store_annotations():
