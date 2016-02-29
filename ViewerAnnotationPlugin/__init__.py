@@ -36,7 +36,7 @@ import re
 # init database + create tables if not exist
 AStore.setup_database('sqlite:///%s' % prefs['annotator_db_path'])
 
-DEBUG_LEVEL = 0
+DEBUG_LEVEL = int(os.environ.get('DEBUG_LEVEL', '0'))
 def dlog(*s):
     if DEBUG_LEVEL == 0:
         return
@@ -204,7 +204,8 @@ class Responder(QtCore.QObject):
                 ## this is the vanilla action: get all
                 document.bridge_value = AStore.index()
             should_update_documentview = True
-            dlog(document.bridge_value)
+            # this output is big if there are lots of annotations!
+            # dlog(document.bridge_value)
         #create:  POST
         elif request_type == "POST":
             dlog("POST %s" % url)
@@ -366,6 +367,7 @@ class ViewerAnnotationPlugin(ViewerPlugin):
                                       show=True)
         self._view.setFocus(Qt.OtherFocusReason)
 
+    # this function is by far the slowest, and is what causes pauses in the render
     def run_javascript(self, evaljs):
         '''
         this gets called after load_javascript.
