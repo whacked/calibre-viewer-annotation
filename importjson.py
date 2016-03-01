@@ -154,7 +154,7 @@ for i, (quote_key, entry) in enumerate(remain, start=1):
         continue
 
     print '='*60
-    print 'NO MATCH: ', quote_key
+    print 'NOT IN CURRENT DB, ADDING: ', quote_key
 
     ann = AModel.Annotation()
     ann.from_dict(d)
