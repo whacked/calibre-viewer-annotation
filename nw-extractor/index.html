@@ -64,6 +64,7 @@ Entities = require('html-entities').AllHtmlEntities;
 
 var EPUB_PATH = gui.App.argv[0];
 var YML_SRC_PATH = gui.App.argv[1];
+var JSON_OUT_PATH = gui.App.argv[1].replace(/\.yml$/, ".json");
 
 var should_not_proceed = false;
 if(!fs.existsSync(EPUB_PATH)) {
@@ -600,8 +601,8 @@ epub.on("end", function() {
                     process.stdout.write("ALL DONE :D\n");
                     clearInterval(monster_timer);
 
-                    process.stdout.write("write to /tmp/out.json\n");
-                    fs.writeFile("/tmp/out.json", JSON.stringify(output, null, 2));
+                    process.stdout.write("write to "+JSON_OUT_PATH+"\n");
+                    fs.writeFile(JSON_OUT_PATH, JSON.stringify(output, null, 2));
                 }
             }
         }, interval_time);
