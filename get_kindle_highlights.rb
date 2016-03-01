@@ -172,15 +172,14 @@ if __FILE__ == $0
   k = setup
   k.books.keys.each do |bkid|
     candidate_output = File.join(output_dir, make_output_filename(k.books[bkid]))
-  kindle = setup
 
-  ## now,
-  # kindle.books
-  # > { "B00EXAMPLE" => "Some Book Title", ... }
-  ## to get highlights, pass the ASIN
-  # kindle.highlights_for("B00EXAMPLE")
-  # > [{"asin" => "B00EXAMPLE", "customerId" ... "highlight": "Some highlighted text", ... } ... ]
-  ## refer to https://github.com/speric/kindle-highlights
+    ## now,
+    # kindle.books
+    # > { "B00EXAMPLE" => "Some Book Title", ... }
+    ## to get highlights, pass the ASIN
+    # kindle.highlights_for("B00EXAMPLE")
+    # > [{"asin" => "B00EXAMPLE", "customerId" ... "highlight": "Some highlighted text", ... } ... ]
+    ## refer to https://github.com/speric/kindle-highlights
   
     if File.exists? candidate_output
       puts "*** already saved:\n    #{k.books[bkid]}"
