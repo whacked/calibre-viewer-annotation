@@ -92,7 +92,9 @@ class Annotation(Base, DBMixin):
 
         ranges = data.pop('ranges', None)
         for key in data:
-            if hasattr(self, key):
+            if key == u'extras':
+                obj[u'extras'].update(data[key])
+            elif hasattr(self, key):
                 obj[key] = data[key]
             else:
                 obj[u'extras'][key] = data[key]
