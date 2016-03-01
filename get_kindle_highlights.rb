@@ -238,33 +238,52 @@ def save(basedir, k, asin)
   "ok: #{ofile}"
 end
 
-if __FILE__ == $0
+if __FILE__ != $0
   # if in irb,
   # load 'get_kindle_highlights.rb'
-  
+  if defined? $k
+    puts 'session active'
+  else
+    puts 'initializing session'
+    $k = setup
+  end
+
+else
   output_dir = ARGV[0] || 'kindle-highlights'
   if not File.exists? output_dir then
     puts "creating output directory: #{output_dir}"
     Dir.mkdir output_dir
   end
   k = setup
-  k.books.keys.each do |bkid|
-    candidate_output = File.join(output_dir, make_output_filename(k.books[bkid]))
+  ## now,
+  # k.books
+  # > { "B00EXAMPLE" => "Some Book Title", ... }
+  ## to get highlights, pass the ASIN
+  # k.highlights_for("B00EXAMPLE")
+  # > [{"asin" => "B00EXAMPLE", "customerId" ... "highlight": "Some highlighted text", ... } ... ]
+  ## refer to https://github.com/speric/kindle-highlights
 
-    ## now,
-    # kindle.books
-    # > { "B00EXAMPLE" => "Some Book Title", ... }
-    ## to get highlights, pass the ASIN
-    # kindle.highlights_for("B00EXAMPLE")
-    # > [{"asin" => "B00EXAMPLE", "customerId" ... "highlight": "Some highlighted text", ... } ... ]
-    ## refer to https://github.com/speric/kindle-highlights
-  
-    if File.exists? candidate_output
-      puts "*** already saved:\n    #{k.books[bkid]}"
-      puts "delete \"#{candidate_output}\" if you want to re-download it."
-      next
-    end
-    puts "saving #{bkid}"
-    save(output_dir, k, bkid)
+  puts "========="
+  puts "BOOK LIST"
+  puts "========="
+  k.books.keys.each do |bkid|
+    puts "- #{bkid}: #{k.books[bkid]}"
+  end
+
+  most_recent = get_most_recent_book(k)
+  puts "==========="
+  puts "MOST RECENT"
+  puts "==========="
+
+  asin = most_recent[:asin]
+  puts "  #{asin}: #{most_recent[:title]}"
+
+  candidate_output = File.join(output_dir, make_output_filename(most_recent[:title]))
+  if File.exists? candidate_output
+    puts "*** already saved:\n    #{asin}"
+    puts "delete \"#{candidate_output}\" if you want to re-download it."
+  else
+    puts "saving #{asin}"
+    save(output_dir, k, asin)
   end
 end
