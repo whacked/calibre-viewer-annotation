@@ -4,14 +4,29 @@
 # USAGE:
 # ruby get_kindle_highlights.rb [output-directory-path]
 
+begin
+  require 'gpgme'
+  USE_GPG = true
+rescue LoadError => e
+  USE_GPG = false
+  puts <<-EOS
+  #{e.message}
+  
+  could not require 'gpgme' gem. loading of gpg files will not work.
+
+  you can try running 'gem install gpgme' to get this to work.
+EOS
+end
+
 require 'yaml'
 require 'io/console'
 require 'kindle_highlights'
 require 'nokogiri'
 
 def setup
-  # for development convenience this will credentials from ~/.aws/kindle
-  # THIS IS NOT RECOMMENDED!
+  # for convenience this will first look for credentials from
+  # ~/.aws/kindle.gpg <-- preferred
+  # ~/.aws/kindle     <-- not preferred
   #
   # in addition, the kindle config file can contain an 'ignore' key, which
   # should map to an array of strings to match against.  After the
@@ -23,10 +38,17 @@ def setup
   # a slash; i.e. in
   # ["Some title", "B000ASIN123", "/.000ASIN0.+/"]
   # we will have 2 exact tests and 1 regex test
-  kindle_config_filepath = File.join(Dir.home, '.aws', 'kindle')
+  kindle_config_filepath = File.join(Dir.home, '.aws', 'kindle' + (USE_GPG ? '.gpg' : ''))
   if File.exists? kindle_config_filepath then
     puts 'loading from config file...'
-    conf = JSON.parse File.read kindle_config_filepath
+
+    if USE_GPG then
+      crypto = GPGME::Crypto.new
+      decrypted = crypto.decrypt File.open(kindle_config_filepath)
+      conf = JSON.parse decrypted.to_s
+    else
+      conf = JSON.parse File.read kindle_config_filepath
+    end
     email = conf['email']
     passw = conf['password']
     ignore = conf['ignore'] or []
