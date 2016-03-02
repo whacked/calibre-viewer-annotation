@@ -129,6 +129,8 @@ nadded = 0
 for i, (quote_key, entry) in enumerate(remain, start=1):
     print('processing %s of %s' % (i, len(remain)))
     d = entry.copy()
+    # 'note' on kindle maps to 'text' in Annotator
+    d['text'] = d.pop('note', None)
     d.update({
         'created': entry.get('created') \
                 and datetime.datetime.fromtimestamp(entry['created']/1000)
