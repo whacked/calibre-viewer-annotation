@@ -118,7 +118,9 @@ class Annotation(Base, DBMixin):
         out['ranges'] = [rg.to_dict() for rg in self.ranges]
         # process the rest
         for c in self.__table__.c:
-            if c.name in out:
+            if   c.name == 'extras':
+                continue
+            elif c.name in out:
                 continue
             else:
                 out[c.name] = getattr(self, c.name)
