@@ -58,24 +58,99 @@
   area will follow things discussed below like in
   =AnnotationProcessor.py= and =anchortext.py=
   
-** update 2016-02-10
+** USAGE (update 2016-03-01)
 
-   prelim importer logic. very hacky. briefly:
+   prelim importer logic. very hacky.
 
-*** step 0. get node-webkit working!
+   The general process is encapsulated and described in the =import_utility.rb= script. It relies on these components:
+   
+*** generate highlights yml files
 
-    =npm install nw=
+    for kindle, this uses =get_kindle_highlights.rb=, it relies on
+    [[https://github.com/speric/kindle-highlights][speric's kindle-highlights]] so you will need to run =gem install
+    kindle-highlights=. You can either enter your login information
+    at run-time, or store your login information in a file at
+    =~/.aws/kindle= or =~/.aws/kindle.gpg= if you have the =gpgme=
+    gem installed.
+    
+    this script and does some additional matching and sanity checking
+    on top of =kindle-highlights=. *In particular, speric's version
+    does not handle text notes attached to highlights*; this script
+    does a 2-pass to put them together.
 
-    verify that it runs via =nw=
+*** reconcile annotation positions with =nw-extractor=
 
-   inside =nw-extractor=
+    what it does: displays externally stored (in e.g. yml files)
+    annotations, tries to locate the annotations within a given epub
+    file, and derives calibre-compatible =xpath= entities to export
 
-*** npm install
+**** npm-installed dependencies
 
-    - glob, html-entities, js-yaml, xpath-range
-    - browserify (needed for xpath-range)
-    - epub
-    - striptags
+     - nw (node webkit)
+     - glob, html-entities, js-yaml, xpath-range
+     - browserify (needed for xpath-range)
+     - epub
+     - striptags
+
+**** how to use it
+
+     basically check if the left column (external notes) matches the
+     text in the right column (inside ebook). Green = good match,
+     where yellow is worse and red is probably fail.
+
+     At the bottom is a "RECONCILE ALL" button, which will attempt to
+     create an importable json file containing the notes with =xpath=
+     addresses attached to them.
+
+**** how xpath derivation works
+     
+     parent window opens a child window that loads the corresponding
+     ebook chapter file, and searches for the best matching string,
+     then derives the xpath-range via the =doMagic= logic (see below),
+     and returns it to the parent process.
+
+     this method is very ugly (uses setTimer because it doesn't know
+     when the child window is finished loading). If you know a fix
+     please let me know!
+
+**** check the highlights + click the =test= button to see if it works
+
+     then scroll to the bottom and click the =reconcile= button and hope it works for everything
+
+*** import the output json and write to the ebook-viewer-annotation database
+
+    =python importjson.py xpath-matched-output.json ebook-file.epub=
+
+    will perform a dry run, and you can check for surprises. the ebook
+    file is optional. It is used to generate =anchor= entries, but the
+    anchor positioning logic is not yet implemented (so we are relying
+    on the =xpath= being accurate and robust).
+
+    this will output basic information of what matches and what fails.
+    if you are lucky, everything will find its proper position.
+
+    once everything looks ok, apply the changes with
+   
+    =DRY_RUN=FALSE python importjson.py xpath-matched-output.json ebook-file.epub=
+
+* development
+  
+  The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
+  although the viewer plugin is slightly different. refer to the
+  [[http://manual.calibre-ebook.com/plugins.html#viewer-plugins][Viewer plugins]] section in the calibre API documentation. Other
+  exploratory notes on interacting with calibre proper may be found in
+  the =doc/devlog=.
+  
+  To play with this code, edit the code in the =ViewerAnnotationPlugin=
+  directory, then run
+
+  #+BEGIN_SRC sh :eval never
+    calibre-customize -b . && ebook-viewer $PATH_TO_EPUB
+  #+END_SRC
+  
+  and it should launch the viewer with the changes applied.
+
+** building source files
 
 *** build xpath-range =doMagic= function
 
@@ -112,44 +187,9 @@
 
     then append =cfi.js= into =driver.js=
 
-*** generate highlights yml files
-
-**** amazon kindle retrieval (ruby)
-
-     =gem install yaml kindle_highlights=
-
-     see =get_kindle_highlights.rb=, set your amazon email and password, then use it to generate yml files for import
-     
-*** running the node-webkit app
-
-    =nw . path_to_book.epub path_to_highlight.yml=
-
-**** check the highlights + click the =test= button to see if it works
-
-     then scroll to the bottom and click the =reconcile= button and hope it works for everything
-
-*** import the output json
-
-    =python importjson.py /tmp/out.json=
-
-* development
-  
-  The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
-  although the viewer plugin is slightly different. refer to the
-  [[http://manual.calibre-ebook.com/plugins.html#viewer-plugins][Viewer plugins]] section in the calibre API documentation. Other
-  exploratory notes on interacting with calibre proper may be found in
-  the =doc/devlog=.
-  
-  To play with this code, edit the code in the =ViewerAnnotationPlugin=
-  directory, then run
-
-  #+BEGIN_SRC sh :eval never
-    calibre-customize -b . && ebook-viewer $PATH_TO_EPUB
-  #+END_SRC
-  
-  and it should launch the viewer with the changes applied.
-
 ** data model
+   
+   *TODO: describe anchor model* (currently not used in viewer / annotator.js)
    
    We generally follow the [[http://docs.annotatorjs.org/en/v1.2.x/annotation-format.html][format from Annotator]]
 
