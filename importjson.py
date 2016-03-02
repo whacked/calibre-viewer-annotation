@@ -23,8 +23,9 @@ is derived from the `highlight` string but is preprocessed to have HTML entities
 converted. See file:nw-extractor/index.html:clean_string() for details.
 
 '''
+import os
 
-DRY_RUN = True
+DRY_RUN = os.environ.get('DRY_RUN') != 'FALSE'
 
 import sys
 if len(sys.argv) < 2:
@@ -37,7 +38,6 @@ import sqlalchemy as sqla
 sys.path.append('ViewerAnnotationPlugin')
 import annotator_model as AModel
 import annotator_store as AStore
-import os
 import datetime
 import bookreader as bkr
 import anchortext as at
