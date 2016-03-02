@@ -18,6 +18,7 @@ import os
 import json
 
 from calibre.gui2.viewer.toc import TOCView
+from calibre.gui2.search_box import SearchBox2
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.Qt import (
@@ -29,11 +30,13 @@ from PyQt5.Qt import (
 from calibre_plugins.viewer_annotation import annotator_model as AModel
 from calibre_plugins.viewer_annotation import annotator_store as AStore
 from calibre_plugins.viewer_annotation.config import prefs
+import types
+import re
 
 # init database + create tables if not exist
 AStore.setup_database('sqlite:///%s' % prefs['annotator_db_path'])
 
-DEBUG_LEVEL = 0
+DEBUG_LEVEL = int(os.environ.get('DEBUG_LEVEL', '0'))
 def dlog(*s):
     if DEBUG_LEVEL == 0:
         return
@@ -41,6 +44,13 @@ def dlog(*s):
         print('[DLOG] ---> %s' % ss)
 
 class AnnotationTOC(TOC):
+
+    _filter = None
+
+    def set_filter(self, flt):
+        self._filter = flt
+    def clear_filter(self):
+        self._filter = None
 
     def update_current_annotation_list(self):
         self.clear()
@@ -69,7 +79,22 @@ class AnnotationTOC(TOC):
                     ## HACK: store bookmark pos in the frag
                     toc[-1].bookmark = annot.get("calibre_bookmark", {})
         self.all_items = depth_first = []
+
+        # set up TOC filter (based on search)
+        filter_func = None
+        if   self._filter is None:
+            filter_func = lambda _: True
+        elif type(self._filter) == types.FunctionType:
+            filter_func = self._filter
+        elif isinstance(self._filter, basestring):
+            filter_func = re.compile('.*' + self._filter.lower() + '.*', re.IGNORECASE).match
+
         for t in toc:
+            
+            if filter_func:
+                if not filter_func(t.text):
+                    continue
+
             ti = TOCItem(self._spine_list, t, 0, depth_first)
             ti.bookmark = t.bookmark
             self.appendRow(ti)
@@ -179,7 +204,8 @@ class Responder(QtCore.QObject):
                 ## this is the vanilla action: get all
                 document.bridge_value = AStore.index()
             should_update_documentview = True
-            dlog(document.bridge_value)
+            # this output is big if there are lots of annotations!
+            # dlog(document.bridge_value)
         #create:  POST
         elif request_type == "POST":
             dlog("POST %s" % url)
@@ -212,6 +238,61 @@ class Responder(QtCore.QObject):
         if should_update_annotation_list:
             ebookviewer.annotation_toc_model.update_current_annotation_list()
 
+class AnnotationSearchBox(SearchBox2):
+    '''
+    the default SearchBox2.initialize requires an `opt_name` parameter,
+    which is a required key, and must exist in the `config` ConfigProxy.
+
+    we subclass it here mainly to bypass this requirement.
+    '''
+
+    INTERVAL = 500  #: Time to wait before emitting search signal
+
+    # to use with store_in_history later?
+    _my_search_history = []
+
+    def _do_search(self, store_in_history=True, as_you_type=False):
+        # generally C&P from search_box.py:SearchBox2._do_search,
+        # except to bypass the config(ConfigProxy) interaction
+        self.hide_completer_popup()
+        text = unicode(self.currentText()).strip()
+        if not text:
+            return self.clear()
+        print('searched for %s'%text)
+        #if as_you_type:
+        #    text = AsYouType(text)
+        self.search.emit(text)
+
+        if store_in_history:
+            idx = self.findText(text, Qt.MatchFixedString|Qt.MatchCaseSensitive)
+            self.block_signals(True)
+            if idx < 0:
+                self.insertItem(0, text)
+            else:
+                t = self.itemText(idx)
+                self.removeItem(idx)
+                self.insertItem(0, t)
+            self.setCurrentIndex(0)
+            self.block_signals(False)
+            self._my_search_history = [unicode(self.itemText(i)) for i in
+                    range(self.count())]
+
+    # only difference with original is setting the interval
+    def key_pressed(self, event):
+        k = event.key()
+        if k in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down,
+                Qt.Key_Home, Qt.Key_End, Qt.Key_PageUp, Qt.Key_PageDown,
+                Qt.Key_unknown):
+            return
+        self.normalize_state()
+        if self._in_a_search:
+            self.changed.emit()
+            self._in_a_search = False
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            self.do_search()
+            self.focus_to_library.emit()
+        elif self.as_you_type and unicode(event.text()):
+            self.timer.start(self.INTERVAL)
 
 class ViewerAnnotationPlugin(ViewerPlugin):
     '''
@@ -286,6 +367,7 @@ class ViewerAnnotationPlugin(ViewerPlugin):
                                       show=True)
         self._view.setFocus(Qt.OtherFocusReason)
 
+    # this function is by far the slowest, and is what causes pauses in the render
     def run_javascript(self, evaljs):
         '''
         this gets called after load_javascript.
@@ -378,10 +460,28 @@ class ViewerAnnotationPlugin(ViewerPlugin):
 
             w.l.addWidget(ui.annotation_toc)
 
-            # no, this does not work without extra code!
-            # ui.annotation_toc_search = TOCSearch(ui.annotation_toc, parent=w)
-            # w.l.addWidget(ui.annotation_toc_search)
+            # search box setup
+            # ref calibre/gui2/viewer/toc.py
+            ui.annotation_toc_search = AnnotationSearchBox(self._view)
+            ui.annotation_toc_search.setMinimumContentsLength(15)
+            ui.annotation_toc_search.line_edit.setPlaceholderText(_('Search Annotations'))
+            ui.annotation_toc_search.setToolTip(_('Search for text in the Annotations'))
+            ui.annotation_toc_search.search.connect(self.do_annotation_search)
+            w.l.addWidget(ui.annotation_toc_search)
+
             w.l.setContentsMargins(0, 0, 0, 0)
+
+    def do_annotation_search(self, text):
+        annotation_toc = self._view.annotation_toc_model
+        if not text or not text.strip():
+            if annotation_toc._filter is None:
+                # no change
+                return
+            self._view.annotation_toc_search.clear(emit_search=False)
+            annotation_toc.clear_filter()
+        else:
+            annotation_toc.set_filter(text)
+        annotation_toc.update_current_annotation_list()
 
     def is_customizable(self):
         '''

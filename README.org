@@ -224,6 +224,12 @@
   The most recent update (2016-02) is not compatible with all updates
   prior to 2016. However, the data model is mostly the same.
   
+*** TOFIX
+
+    - sometimes editing an annotation raises a UnicodeError (could be related to imported highlights)
+    - annotation stops working with changing flow mode (ref https://github.com/whacked/calibre-viewer-annotation/issues/2)
+
+
 *** 2016-02-09 :: elixir removed, change model;
     
     If you actually need to migrate, see [[file:migrate.sh]] which tries
