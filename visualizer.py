@@ -437,13 +437,16 @@ def annotate():
 
 
 import sys
+import os
 sys.path.insert(0, 'ViewerAnnotationPlugin')
 sys.path.insert(0, 'ViewerAnnotationPlugin/elixir')
 import annotator_store as AStore
 import annotator_model as AModel
+import sqlalchemy as sqla
+import urllib
 
-AModel.metadata.bind = 'sqlite:///test.db'
-AModel.setup_all(True)
+# AModel.metadata.bind = 'sqlite:///test.db'
+AStore.setup_database('sqlite:///%s' % os.path.expanduser('~/ebook-viewer-annotation.db'))
 
 @app.route('/annotation')
 def annotation():
@@ -457,6 +460,71 @@ def annotation():
     print AModel.Annotation.query.all()
     print annot_resultset
     return render_template_string('''\
+''', **ctx)
+
+
+@app.route('/book/<title>')
+def book(title):
+    ctx = EasyDict(ann_list = [])
+    ctx.title = title
+    annot_resultset = json.loads(AStore.search_annotations(
+        title = title,
+    ))
+    ctx.ann_list = AStore.session.query(AModel.Annotation).filter_by(title = title).all()
+    return render_template_string('''
+<style>
+* {
+font-size:small;
+}
+</style>
+<h3>
+{{ title }}
+</h3>
+
+{% set klist = ['created', 'quote', 'text',] %}
+<table><tbody>
+
+<tr>
+{% for k in klist %}
+<th>
+{{ k }}
+</th>
+{% endfor %}
+</tr>
+
+{% for ann in ann_list %}
+<tr>
+
+{% for k in klist %}
+<td>
+{% if ann[k] %}
+    {{ ann[k] }}
+{% endif %}
+</td>
+{% endfor %}
+
+</tr>
+{% endfor %}
+</tbody></table>
+    
+''', **ctx)
+
+@app.route('/listing')
+def listing():
+    ctx = EasyDict(book_list = [])
+    annot_resultset = json.loads(AStore.search_annotations())
+    for row in AStore.session.execute(sqla.select([
+        AModel.Annotation.title,
+        ]).distinct()).fetchall():
+        ctx.book_list.append(row)
+    return render_template_string('''\
+<ul>
+{% for book in book_list %}
+<li>
+    <a href="{{ url_for('book', title=book['title']) }}">{{ book['title'] }}</a>
+</li>
+{% endfor %}
+</ul>
 ''', **ctx)
 
 
