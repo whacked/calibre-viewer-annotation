@@ -381,7 +381,8 @@ function get_numeric(s) {
  */
 var spine_map = {};
 var html_map = {};
-var annot_map = {};
+// superceded by allResult aka `all-result` from searchlogic.sib
+// var annot_map = {};
 var failure_list = [];
 
 
@@ -457,109 +458,26 @@ epub.on("end", function() {
       runTokenizedSearch();
       // </searchlogic.sib>
 
-    var file_start_index = 0;
-    yml.highlight_list.forEach(function(entry) {
-        var search_string = clean_string(entry.highlight);
-        // port of "fuzzy search" see processkinde.py
-
-        // since both the file list and annotation list are sorted, in every
-        // annotation entry iteration we will exclude all files processed prior
-        // to the latest match
-        var file_index = file_start_index;
-        for(var file_index = file_start_index; file_index<arr_pres.length; ++file_index) {
-            var pres = arr_pres[file_index];
-            var corpus = html_map[pres.href];
-            var token_list = search_string.split(/\s+/);
-            if(token_list.length < 4) {
-                // direct match
-                // strip non-characters to improve matching chance
-                // there is text enclosed in tags, and the punctuation after it isn't!
-                // a smarter version might do char-by-char.
-                var loc = corpus.indexOf(search_string.replace(/^\W+/g, "").replace(/\W+$/g, ""))
-                if(loc > -1) {
-                    annot_map[entry.highlight] = make_result(loc, 1.0, pres.href);
-                    file_start_index = file_index;
-                    break;
-                } else {
-                    // for debugging
-                }
-            } else {
-                var check_length = search_string.length*2;
-                var offset = 0;
-                var safety = 1000;
-                var substring = null;
-                var niter = 0;
-                while(offset < corpus.length) {
-                    if(++niter > safety) {
-                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
-                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
-                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
-                        console.log("OUT OF CONTROL!!!! ", offset, check_length, corpus.length);
-                        console.log(search_string, substring);
-                        return;
-                    }
-                    if(corpus.substr(offset).indexOf(token_list[0]) == -1) {
-                        break;
-                    }
-
-                    var found_index = offset + corpus.substr(offset).indexOf(token_list[0]);
-                    /**
-                     * need to get tag-stripped text up to the desired length.
-                     * we need this because it turns out the text matcher is failing because there is
-                     * text with a lot of surrounding html, which causes `check_length` in the search
-                     * loop to be hit when only a little bit of text is read! And then it thinks there
-                     * is no match and gives up.
-                     */
-                    substring = "";
-                    var end_index = found_index + check_length;
-                    // allow it to overshoot the max length once, i.e. read until end of string
-                    // if check_length exceeds the corpus length
-                    while(substring.length < check_length) {
-                        substring = striptags(corpus.substring(found_index, end_index));
-                        if(end_index > corpus.length) {
-                            break;
-                        }
-                        end_index += check_length;
-                    }
-                    if(substring.indexOf(token_list[token_list.length-1]) == -1) {
-                        offset = found_index+token_list[0].length;
-                        continue;
-                    }
-
-                    // at this point, the first token check is redundant, but who cares
-                    var hit_count = get_corpus_coverage(substring, token_list);
-                    var score = hit_count/token_list.length;
-                    if(score > 0.7) {
-                        annot_map[entry.highlight] = make_result(offset, score, pres.href);
-                        file_start_index = file_index;
-                        return;
-                    } else {
-                        offset = found_index+token_list[0].length;
-                    }
-                }
-            }
+      yml.highlight_list.forEach(function(entry) {
+        if(!maybeResult(entry)) {
+          failure_list.push(entry.highlight);
         }
-    }); // end forEach
-    yml.highlight_list.forEach(function(entry) {
-        if(!annot_map[entry.highlight]) {
-            failure_list.push(entry.highlight);
-        }
-    });
+      });
+      
+      $("#status").html(Object.keys(allResult).length + " found, " + failure_list.length + " failures ("+yml.highlight_list.length+" total)");
 
-    $("#status").html(Object.keys(annot_map).length + " found, " + failure_list.length + " failures ("+yml.highlight_list.length+" total)");
-
-    // results display
-    var tbl = $("table");
-    var key_list = ["check?", "timestamp", "location", "found?", "highlight", "note", "verification"];
-    var monster_list = [];
-    yml.highlight_list.forEach(function(entry) {
+      // results display
+      var tbl = $("table");
+      var key_list = ["check?", "timestamp", "location", "found?", "highlight", "note", "verification"];
+      var monster_list = [];
+      yml.highlight_list.forEach(function(entry) {
         if(tbl.children().length == 0) {
-            var tr = $("<tr>").appendTo(tbl);
-            key_list.forEach(function(key) {
-                $("<th>").html(key).appendTo(tr);
-            });
+          var tr = $("<tr>").appendTo(tbl);
+          key_list.forEach(function(key) {
+            $("<th>").html(key).appendTo(tr);
+          });
         }
-      renderEntryResultRow(entry).appendTo(tbl);
+        renderEntryResultRow(entry).appendTo(tbl);
 
     });
 
