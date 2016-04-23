@@ -58,11 +58,11 @@
   area will follow things discussed below like in
   =AnnotationProcessor.py= and =anchortext.py=
   
-** USAGE (update 2016-03-01)
+** USAGE (update 2016-04-23)
 
    prelim importer logic. very hacky.
 
-   The general process is encapsulated and described in the =import_utility.rb= script. It relies on these components:
+   The general usage process is encapsulated and described in the =import_utility.rb= script. It relies on these components:
    
 *** generate highlights yml files
 
@@ -133,6 +133,11 @@
    
     =DRY_RUN=FALSE python importjson.py xpath-matched-output.json ebook-file.epub=
 
+** text matching logic
+
+   logic is found variously in =nw-extractor/index.html= as well as [[https://github.com/jbr/sibilant][Sibilant]] and corresponding javascript output files in =nw-extractor/js=.
+   The Sibilant code iteration uses [[https://github.com/skeeto/skewer-mode][Emacs skewer-mode]] and [[https://github.com/whacked/sibilant-skewer][sibilant-skewer]].
+   
 * development
   
   The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
