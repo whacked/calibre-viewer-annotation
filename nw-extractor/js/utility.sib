@@ -1,0 +1,89 @@
+(console.log "utility included.")
+
+;; utility
+(def score2rgb (score)
+     (var r 0
+          g 0
+          b 0)
+     (ternary (< 0.5 score)
+              (scoped
+               (assign r (Math.floor (* 255 (- 1 (* 2 (- score 0.5))))))
+               (assign g 255))
+              (scoped
+               (assign r 255)
+               (assign g (Math.floor (* 255 (- 1 (* 2 (- 0.5 score))))))))
+     (+ "rgb(" (Math.floor r) "," (Math.floor g) "," b ")"))
+
+(def make-entry-id (entry)
+     (+ entry.startLocation "-" entry.endLocation))
+
+(def clean-string (s)
+     (entities.decode
+      (pipe s
+            (replace "\\s+$" "")
+            (replace "^\\s+" ""))))
+
+(def get-corpus-coverage (corpus token-list)
+     (var hit-count 0
+          offset 0)
+     (each token token-list
+           (var found-index (pipe offset
+                                  (corpus.substr)
+                                  (.indexOf token)))
+           (when (< -1 found-index)
+                 (incr hit-count)
+                 (assign offset (+ offset found-index))))
+     hit-count)
+
+(def render-entry-result-row (entry)
+     (var entry-id (make-entry-id entry))
+     (var result (or (get all-result entry-id) {}))
+     
+     (var tr ($ "<tr>"))
+     (each key ["check?", "timestamp", "location", "found?", "highlight", "note", "verification"]
+           (var td ($ "<td>"))
+
+           (var entry-val (get entry key))
+
+           (if (= key "check?")
+               (pipe (pipe ($ "<button>")
+                           (.html "check")
+                           (.click (#>
+                                    (launch-and-find result.source entry))))
+                     (td.append))
+
+               (= key "timestamp")
+               (td.html (new Date entry-val))
+
+               (= key "location")
+               (td.html (+ entry.startLocation "~"
+                           entry.endLocation " ("
+                           (- entry.endLocation entry.startLocation)
+                           ")"))
+               
+               (= key "found?")
+               (scoped
+                (ternary (and (get result "score")
+                              (< 0 (get result "score")))
+                         (scoped
+                          (pipe td
+                                (.attr {class: "yes-found"})
+                                (.html (+ ""
+                                          (pipe (get result "score")
+                                                (.toFixed 3))
+                                          " "
+                                          (get result "source")))))
+                         (scoped
+                          (td.attr {class: "not-found"}))))
+               
+               ;; leave blank on init
+               (= key "verification")
+               (pipe td
+                     (.attr {id: (+ "td-sel-" entry-id)
+                             class: "td-sel"}))
+
+               (td.html entry-val)
+               )
+           (td.appendTo tr)
+           )
+     tr)

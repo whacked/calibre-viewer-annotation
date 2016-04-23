@@ -1,0 +1,208 @@
+;; debugging
+;; (console.clear)
+;; == interactive ==
+(var DEBUG-LEVEL 0)
+(var console-log-orig console.log)
+(def dlog (...argv)
+     ;; (console-log-orig.call console "%c***modified***" "color:red;")
+     (when (< 0 DEBUG-LEVEL)
+           (console-log-orig.apply console argv)))
+(eval "console.log = dlog")
+
+;; == compiled ==
+;; skip console.log output in compilation.
+;; see https://github.com/jbr/sibilant/blob/master/include/macros.sibilant
+;; for macro syntax examples
+;; COMMENT THIS OUT to preserve console.log in js output
+(macro console.log (...body) `(comment ...@body))
+;; /debugging
+
+;; logic
+(var arr-pres [])
+(var html-map {})
+(var all-result {})
+
+(def make-result (index score source-file)
+     {index: index score: score source: source-file})
+
+(def maybe-result (entry)
+     (get all-result (make-entry-id entry)))
+
+;; given a file name, find the index within arr-pres
+(def get-file-index (fname)
+     (var idx-rtn 0)
+     (while (< idx-rtn arr-pres.length)
+            (var pres (get arr-pres idx-rtn))
+            (when pres
+                  (var match-fname (get pres 'href))
+                  (when (= fname match-fname)
+                        (console.log "RETURNING " idx-rtn)
+                        (return idx-rtn)))
+            (incr idx-rtn)))
+
+;; load all "publication resource" into all-pres
+(def load-all-publication-resource ()
+     (var html-file-match (new RegExp "\.htm.$"))
+     (each key (Object.keys epub.manifest)
+           (var pres (get epub.manifest key))
+           (if (pres.href.match html-file-match)
+               (arr-pres.push pres)))
+     (console.log (+ "finished processing epub manifest, length: " arr-pres.length))
+
+     ;; populate html map
+     (each (pres idx) arr-pres
+           (epub.getFile pres.id (lambda (err data mimetype)
+                                         (set html-map pres.id (data.toString "utf8"))
+                                         (console.log (+ "loaded: " pres.id))
+                                         ))))
+
+;; naive search by exact string match
+(def run-naive-search ()
+     (scoped
+      (var last-file-index 0)
+      (var stat {found: 0})
+      
+      (each (entry idx-entry) yml.highlight_list
+
+            (var entry-id (make-entry-id entry))
+            (var cur-result (or (get all-result entry-id) {}))
+
+            (ternary (get cur-result "score")
+                     (scoped
+
+                      (console.log "%cALREADY FOUND!!!"
+                                   "background:black;color:red;font-weight:bold;")
+                      )
+                     (scoped
+                      (comment
+                       (console.log
+                        (+ "searching for string in entry " (+ 1 idx-entry)
+                           " out of " yml.highlight_list.length
+                           ", starting at " last-file-index)))
+                      (var search-string (clean-string entry.highlight))
+                      ;; (console.log search-string)
+                      (each (pres pres-offset) (arr-pres.slice last-file-index)
+                            (var found-index
+                                 (pipe (get html-map pres.id)
+                                       (.indexOf search-string)))
+                            (when (< -1 found-index)
+                                  (console.log (+ "FOUND IT at " found-index))
+                                  (set stat "found" (+ 1 (get stat "found")))
+                                  (assign last-file-index (+ last-file-index pres-offset))
+                                  (set all-result entry-id (make-result found-index 1.0 pres.href)))))))
+      (console.log (+ "TOTAL: " (get stat "found")))))
+
+;; tokenize method
+(def run-tokenized-search ()
+     (console.clear)
+
+     (var total 0)
+     
+     (var re-whitespace (new RegExp "\\s+"))
+     (var file-start-index 0)
+     (each entry yml.highlight_list
+           ;; skip already successful entries
+           (when (maybe-result entry)
+                 (incr total)
+                 (return))
+
+           (var entry-id (make-entry-id entry))
+           (var search-string (clean-string entry.highlight))
+           
+           (var token-list (search-string.split re-whitespace))
+
+           (var check-length (* 2 search-string.length))
+           (var safety 1000)
+           (var substring null)
+           (var niter 0)
+
+           (comment (console.log "SEARCHING FOR:" search-string))
+           
+           (var break0 false
+                i file-start-index)
+           (while (and (< i arr-pres.length)
+                       (not break0))
+                  (var file-index i)
+                  (var pres (get arr-pres file-index))
+                  (incr i)
+
+                  (when (and (< 11 i) (< i 15))
+                        (console.log "..." file-index (get pres 'href)))
+                  
+                  (var offset 0)
+
+                  (var full-html (get html-map pres.id))
+                  (var full-text (pipe full-html
+                                       (striptags)
+                                       (clean-string)
+                                       (replace-all "\\s+" " ")))
+                  (var match-idx (full-text.indexOf search-string))
+
+                  (var break1 false)
+                  (while (and (< offset full-text.length)
+                              (not break1))
+                         (incr niter)
+                         (when (< safety niter)
+                               (console.log (+ "%cOUT OF CONTROL: " niter) "color:white;background:red;")
+                               (assign offset full-text.length)
+                               (assign break1 true)
+                               (return))
+                         (var lead-token (get token-list 0))
+
+                         (comment
+                          (console.log (+ "looking for: " lead-token
+                                          " in: %c#" (full-text.substring offset (+ offset 50)) "#")
+                                       "color:gray;"))
+                         
+                         (var match-index (pipe full-text
+                                                (.substr offset)
+                                                (.indexOf lead-token)))
+                         (when (= -1 match-index)
+
+                               (comment
+                                (console.log (+ ".   no more to search from %c"
+                                                (get pres 'href)
+                                                ". %cQUIT")
+                                             "font-weight:bold;"
+                                             "font-weight:normal"))
+                               
+                               (assign break1 true)
+                               (return))
+                         
+                         (var found-index (+ offset match-index))
+                         (var end-index (+ found-index check-length))
+                         (assign substring "")
+
+                         (var break2 false)
+                         (while (and (< substring.length check-length)
+                                     (not break2))
+                                (assign substring (full-text.substring found-index end-index))
+                                (when (< full-text.length end-index)
+                                      ;; (console.log "SHOULD BE OVER!")
+                                      (assign break2 true)
+                                      (return))
+                                (incr-by end-index check-length))
+
+                         (ternary (= -1 (substring.indexOf (last token-list)))
+                                  (scoped
+                                   ;; (console.log "end token not found, updating offset...")
+                                   (assign offset (+ found-index lead-token.length)))
+                                  (scoped
+                                   ;; (console.log "FOUND LAST")
+                                   (var hit-count (get-corpus-coverage substring token-list))
+                                   (var score (/ hit-count token-list.length))
+                                   (ternary (< 0.7 score)
+                                            (scoped
+                                             (console.log "%c   OK!   " "color:white;background:lime;")
+                                             (set all-result entry-id (make-result offset score pres.href))
+                                             (assign file-start-index file-index)
+                                             (assign break0 true
+                                                     break1 true)
+                                             (return))
+                                            (scoped
+                                             (assign offset (+ found-index lead-token.length))))
+                                   ))
+                         ))
+           )
+
+     (console.log (+ "TOTAL: " total)))

@@ -5,7 +5,12 @@
 
     <script type="text/javascript" src="node_modules/xpath-range/node_modules/jquery/dist/cdn/jquery.js"></script>
     <script type="text/javascript" src="node_modules/js-yaml/dist/js-yaml.js"></script>
+    
+    <script type="text/javascript" src="js/utility.js"></script>
+    <script type="text/javascript" src="js/searchlogic.js"></script>
 
+    <!-- <script type="text/javascript" src="http://localhost:9000/skewer"></script> -->
+    
 <script>
 /**
  * TODO
@@ -361,6 +366,7 @@ function launch_and_find(source_filepath, entry, close_after_ms) {
     });
 
 }
+launchAndFind = launch_and_find;
 
 function get_numeric(s) {
     return parseFloat(s.replace(/\D/g, ""));
@@ -393,6 +399,10 @@ epub.on("end", function() {
     });
     console.log("finished processing epub manifest, length: " + arr_pres.length);
 
+    // <searchlogic.sib>
+    loadAllPublicationResource();
+    // </searchlogic.sib>
+
     function populate_entry_by_index(entry_index) {
         var pres = arr_pres[entry_index];
         // console.log("proc arr pres... " + entry_index + " " + pres.id + ", " + pres.href);
@@ -406,6 +416,8 @@ epub.on("end", function() {
             html_map[pres.href] = data.toString('utf8');
             spine_map[pres.href] = entry_index+1;
             // console.log(pres.href + " done, now length: " + Object.keys(spine_map).length);
+
+            // run once, after all resources have been populated
             if(Object.keys(html_map).length == arr_pres.length) {
                 console.log("OK, READY.");
                 arr_pres.sort(function(a, b) {
@@ -439,6 +451,11 @@ epub.on("end", function() {
     function build_candidate_mapping() {
         console.log("BUILDING CANDIDATE MAPPING...");
         setup_server();
+
+      // <searchlogic.sib>
+      runNaiveSearch();
+      runTokenizedSearch();
+      // </searchlogic.sib>
 
     var file_start_index = 0;
     yml.highlight_list.forEach(function(entry) {
@@ -542,48 +559,8 @@ epub.on("end", function() {
                 $("<th>").html(key).appendTo(tr);
             });
         }
+      renderEntryResultRow(entry).appendTo(tbl);
 
-        var tr = $("<tr>");
-        var res = annot_map[entry.highlight];
-        key_list.forEach(function(key) {
-            var td = $("<td>");
-            switch(key) {
-            case "check?":
-                var test_button = $("<button>").html("check");
-                td.append(test_button).appendTo(tr);
-                test_button.click(function() {
-                    launch_and_find(res.source, entry);
-                });
-                break;
-            case "timestamp":
-                td.html(new Date(entry[key]));
-                break;
-            case "location":
-                td.html(entry.startLocation + "~" + entry.endLocation + " (" +(entry.endLocation-entry.startLocation)+ ")");
-                break;
-            case "found?":
-                if(annot_map[entry.highlight]) {
-                    var spl = res.source.split(path.sep);
-                    td.html(res.score.toFixed(3) + " " + spl[spl.length-1]);
-                    td.attr({class: "yes-found"});
-
-                    monster_list.push([res.source, entry]);
-                } else {
-                    td.attr({class: "not-found"});
-                }
-                break;
-            case "verification":
-                // leave blank on init
-                td.attr("id", "td-sel-"+entry.startLocation+"-"+entry.endLocation);
-                break;
-            default:
-                if(entry[key]) {
-                    td.html(entry[key]).appendTo(tr);
-                }
-            }
-            td.appendTo(tr);
-        });
-        tr.appendTo(tbl);
     });
 
     $("<button>").html("RECONCILE ALL").click(function() {
