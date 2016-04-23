@@ -1,4 +1,4 @@
-var DEBUG_LEVEL = 0;
+var DEBUG_LEVEL = 10;
 var consoleLogOrig = console.log;
 var dlog = (function dlog$(argv) {
   /* dlog eval.sibilant:6:0 */
@@ -43,7 +43,7 @@ var getFileIndex = (function getFileIndex$(fname) {
             var matchFname = pres.href;
             return (function() {
               if (fname === matchFname) {
-                // "RETURNING "// idxRtn;
+                console.log("RETURNING ", idxRtn);
                 return idxRtn;
               }
             }).call(this);
@@ -69,7 +69,7 @@ var loadAllPublicationResource = (function loadAllPublicationResource$() {
       }
     }).call(this);
   }));
-  // ("finished processing epub manifest, length: " + arrPres.length);
+  console.log(("finished processing epub manifest, length: " + arrPres.length));
   return arrPres.forEach((function(pres, idx) {
     /* eval.sibilant:53:5 */
   
@@ -77,7 +77,7 @@ var loadAllPublicationResource = (function loadAllPublicationResource$() {
       /* eval.sibilant:54:33 */
     
       htmlMap[pres.id] = data.toString("utf8");
-      return // ("loaded: " + pres.id);
+      return console.log(("loaded: " + pres.id));
     }));
   }));
 });
@@ -97,11 +97,11 @@ var runNaiveSearch = (function runNaiveSearch$() {
       return (curResult.score) ? (function() {
         /* eval.sibilant:70:21 */
       
-        return // "%cALREADY FOUND!!!"// "background:black;color:red;font-weight:bold;";
+        return console.log("%cALREADY FOUND!!!", "background:black;color:red;font-weight:bold;");
       }).call(this) : (function() {
         /* eval.sibilant:75:21 */
       
-        // // ("searching for string in entry " + (1 + idxEntry) + " out of " + yml.highlight_list.length + ", starting at " + lastFileIndex);
+        // console.log(("searching for string in entry " + (1 + idxEntry) + " out of " + yml.highlight_list.length + ", starting at " + lastFileIndex));
         var searchString = cleanString(entry.highlight);
         return arrPres.slice(lastFileIndex).forEach((function(pres, presOffset) {
           /* eval.sibilant:83:22 */
@@ -109,7 +109,7 @@ var runNaiveSearch = (function runNaiveSearch$() {
           var foundIndex = htmlMap[pres.id].indexOf(searchString);
           return (function() {
             if (-1 < foundIndex) {
-              // ("FOUND IT at " + foundIndex);
+              console.log(("FOUND IT at " + foundIndex));
               stat.found = (1 + stat.found);
               lastFileIndex = (lastFileIndex + presOffset);
               return allResult[entryId] = makeResult(foundIndex, 1, pres.href);
@@ -118,18 +118,17 @@ var runNaiveSearch = (function runNaiveSearch$() {
         }));
       }).call(this);
     }));
-    return // ("TOTAL: " + stat.found);
+    return console.log(("TOTAL: " + stat.found));
   }).call(this);
 });
 var runTokenizedSearch = (function runTokenizedSearch$() {
   /* run-tokenized-search eval.sibilant:95:0 */
 
-  console.clear();
   var total = 0;
   var reWhitespace = (new RegExp("\\s+"));
   var fileStartIndex = 0;
   yml.highlight_list.forEach((function(entry) {
-    /* eval.sibilant:101:5 */
+    /* eval.sibilant:105:11 */
   
     (function() {
       if (maybeResult(entry)) {
@@ -144,7 +143,7 @@ var runTokenizedSearch = (function runTokenizedSearch$() {
     var safety = 1000;
     var substring = null;
     var niter = 0;
-    // // "SEARCHING FOR:"// searchString;
+    // console.log("SEARCHING FOR:", searchString);
     var break0 = false,
         i = fileStartIndex;
     return (function() {
@@ -156,7 +155,7 @@ var runTokenizedSearch = (function runTokenizedSearch$() {
           ((i)++);
           (function() {
             if ((11 < i && i < 15)) {
-              return // "..."// fileIndex// pres.href;
+              return console.log("...", fileIndex, pres.href);
             }
           }).call(this);
           var offset = 0;
@@ -171,18 +170,18 @@ var runTokenizedSearch = (function runTokenizedSearch$() {
                 ((niter)++);
                 (function() {
                   if (safety < niter) {
-                    // ("%cOUT OF CONTROL: " + niter)// "color:white;background:red;";
+                    console.log(("%cOUT OF CONTROL: " + niter), "color:white;background:red;");
                     offset = fullText.length;
                     break1 = true;
                     return ;
                   }
                 }).call(this);
                 var leadToken = tokenList[0];
-                // // ("looking for: " + leadToken + " in: %c#" + fullText.substring(offset, (offset + 50)) + "#")// "color:gray;";
+                // console.log(("looking for: " + leadToken + " in: %c#" + fullText.substring(offset, (offset + 50)) + "#"), "color:gray;");
                 var matchIndex = fullText.substr(offset).indexOf(leadToken);
                 (function() {
                   if (-1 === matchIndex) {
-                    // // (".   no more to search from %c" + pres.href + ". %cQUIT")// "font-weight:bold;"// "font-weight:normal";
+                    // console.log((".   no more to search from %c" + pres.href + ". %cQUIT"), "font-weight:bold;", "font-weight:normal");
                     break1 = true;
                     return ;
                   }
@@ -208,25 +207,25 @@ var runTokenizedSearch = (function runTokenizedSearch$() {
                   return while$4;
                 }).call(this);
                 return (-1 === substring.indexOf(tokenList.slice(-1)[0])) ? (function() {
-                  /* eval.sibilant:179:34 */
+                  /* eval.sibilant:207:34 */
                 
                   return offset = (foundIndex + leadToken.length);
                 }).call(this) : (function() {
-                  /* eval.sibilant:182:34 */
+                  /* eval.sibilant:210:34 */
                 
                   var hitCount = getCorpusCoverage(substring, tokenList);
                   var score = (hitCount / tokenList.length);
                   return (0.7 < score) ? (function() {
-                    /* eval.sibilant:187:44 */
+                    /* eval.sibilant:217:44 */
                   
-                    // "%c   OK!   "// "color:white;background:lime;";
+                    console.log("%c   OK!   ", "color:white;background:lime;");
                     allResult[entryId] = makeResult(offset, score, pres.href);
                     fileStartIndex = fileIndex;
                     break0 = true;
                     break1 = true;
                     return ;
                   }).call(this) : (function() {
-                    /* eval.sibilant:194:44 */
+                    /* eval.sibilant:224:44 */
                   
                     return offset = (foundIndex + leadToken.length);
                   }).call(this);
@@ -240,5 +239,37 @@ var runTokenizedSearch = (function runTokenizedSearch$() {
       return while$2;
     }).call(this);
   }));
-  return // ("TOTAL: " + total);
+  return console.log(("TOTAL: " + total));
+});
+var monsterTimer = undefined;
+var reconcileAll = (function reconcileAll$() {
+  /* reconcile-all eval.sibilant:233:0 */
+
+  var intervalTime = 150;
+  var entryIndex = 0;
+  return monsterTimer = setInterval((function() {
+    /* eval.sibilant:238:14 */
+  
+    console.log(("working on entry " + (1 + entryIndex) + " of " + yml.highlight_list.length));
+    (entryIndex < yml.highlight_list.length) ? (function() {
+      /* eval.sibilant:243:24 */
+    
+      var entry = yml.highlight_list[entryIndex];
+      var result = maybeResult(entry);
+      (function() {
+        if ((result && !(output[entry.highlight]))) {
+          return launchAndFind(result.source, entry, intervalTime);
+        }
+      }).call(this);
+      return ((entryIndex)++);
+    }).call(this) : (function() {
+      if (0 === n_active_search) {
+        process.stdout.write("ALL DONE :D\n");
+        clearInterval(monsterTimer);
+        process.stdout.write(("wrote to " + JSON_OUT_PATH + "\n"));
+        return fs.writeFile(JSON_OUT_PATH, JSON.stringify(output, null, 2));
+      }
+    }).call(this);
+    return console.log((entryIndex + ", OK!"));
+  }), intervalTime);
 });

@@ -469,7 +469,6 @@ epub.on("end", function() {
       // results display
       var tbl = $("table");
       var key_list = ["check?", "timestamp", "location", "found?", "highlight", "note", "verification"];
-      var monster_list = [];
       yml.highlight_list.forEach(function(entry) {
         if(tbl.children().length == 0) {
           var tr = $("<tr>").appendTo(tbl);
@@ -481,27 +480,12 @@ epub.on("end", function() {
 
     });
 
-    $("<button>").html("RECONCILE ALL").click(function() {
-        var interval_time = 150;
-        var monster_index = 0;
-        var monster_timer = setInterval(function() {
-            process.stdout.write(">>> STATUS: " + Object.keys(output).length + " processed.\n");
-            if(monster_index < monster_list.length) {
-                var pair = monster_list[monster_index];
-                monster_index++;
-                // process.stdout.write("processing from: "+ pair[1] + "\n");
-                launch_and_find(pair[0], pair[1], interval_time);
-            } else {
-                if(n_active_search == 0) {
-                    process.stdout.write("ALL DONE :D\n");
-                    clearInterval(monster_timer);
-
-                    process.stdout.write("write to "+JSON_OUT_PATH+"\n");
-                    fs.writeFile(JSON_OUT_PATH, JSON.stringify(output, null, 2));
-                }
-            }
-        }, interval_time);
-    }).insertAfter(tbl);
+      $("<button>").html("RECONCILE ALL").on("click", reconcileAll).insertAfter(tbl);
+      // n_active_search may somehow not get decremented properly; attempt to force break out of the timer loop
+      $("<button>").html("attempt to terminate reconcilation").on("click", function() {
+        n_active_search = 0;
+        clearInterval(monsterTimer);
+      }).insertAfter(tbl);
 
     } // build_candidate_mapping
 
