@@ -321,6 +321,9 @@
                 note: data.note
 
                 verification: (m.prop {})
+                ;; stores an entry matching something found in the annotation db;
+                ;; i.e. if exists, this item has already been processed
+                db-entry: (m.prop null)
                 }))
 
 ;; <file list setup>
@@ -353,7 +356,9 @@
 
 
 (var m-result
-     {hdr-list: ["check?" "timestamp" "location" "found?" "highlight" "note" "verification"]
+     {hdr-list: ["check?" "timestamp" "location" "found?"
+                  "highlight" "note" "verification"
+                  "in db?"]
        vm: (scoped
             (var vm {})
             (assign vm.init
@@ -385,7 +390,8 @@
                                (m "tr"
                                   (m-result.hdr-list.map
                                    (#(hdr)
-                                     (var entry-val (get entry hdr))
+                                     (var entry-val (get entry hdr)
+                                          score (get result 'score))
                                      (m "td"
                                         (if (= hdr "check?")
                                             (m "button"
@@ -412,16 +418,15 @@
                                             
                                             (= hdr "found?")
                                             (scoped
-                                             (ternary (and (get result "score")
-                                                           (< 0 (get result "score")))
+                                             (ternary (and score (< 0 score))
                                                       (scoped
                                                        (m "div"
                                                           {class: "yes-found"}
                                                           (+ ""
-                                                             (|> (get result "score")
+                                                             (|> score
                                                                  (.toFixed 3))
                                                              " "
-                                                             (get result "source"))))
+                                                             result.source)))
                                                       (m "div" {class: "not-found"})))
                                             
                                             ;; leave blank on init
@@ -436,9 +441,17 @@
                                                                              "")}}
                                                 (get verf 'content)))
 
+                                            (= hdr "in db?")
+                                            (m "div"
+                                               (scoped
+                                                (var db-entry (entry.db-entry))
+                                                (ternary db-entry
+                                                         db-entry.quote
+                                                         "")))
+
                                             true
                                             (m "div" (ternary entry-val
-                                                             (m.trust entry-val)
+                                                              (m.trust entry-val)
                                                              ""))))
                                      
                                      ))))
