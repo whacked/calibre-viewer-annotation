@@ -7,7 +7,7 @@
      ;; (console-log-orig.call console "%c***modified***" "color:red;")
      (when (< 0 DEBUG-LEVEL)
            (console-log-orig.apply console argv)))
-(eval "console.log = dlog")
+(assign console.log dlog)
 
 ;; == compiled ==
 ;; skip console.log output in compilation.
@@ -18,9 +18,10 @@
 ;; /debugging
 
 ;; logic
-(var arr-pres [])
-(var html-map {})
-(var all-result {})
+(var arr-pres []
+     html-map {}
+     spine-map {}
+     all-result {})
 
 (def make-result (index score source-file)
      {index: index score: score source: source-file})
@@ -42,7 +43,7 @@
 
 ;; load all "publication resource" into all-pres
 (def load-all-publication-resource ()
-     (var html-file-match (new RegExp "\.htm.$"))
+     (var html-file-match (new RegExp "\\.htm.$"))
      (each key (Object.keys epub.manifest)
            (var pres (get epub.manifest key))
            (if (pres.href.match html-file-match)
