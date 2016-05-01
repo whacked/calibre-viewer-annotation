@@ -23,6 +23,9 @@
             (replace "\\s+$" "")
             (replace "^\\s+" ""))))
 
+(def get-numeric (s)
+     (parseFloat (replace-all s "\\D" "")))
+
 (def get-corpus-coverage (corpus token-list)
      (var hit-count 0
           offset 0)

@@ -1,0 +1,100 @@
+.clear { clear: both; }
+#book-panel {
+    width: 300px;
+    float: left;
+    padding: 0.5em;
+}
+#annotation-panel {
+    padding: 0.5em;
+}
+
+#result-display {
+    width: 700px;
+    border: 1px solid gray;
+}
+#matcher-panel {
+    position: absolute;
+    top: 0;
+    left: 710px;
+    opacity: 0.8;
+}
+#matcher-panel iframe {
+    position: fixed;
+    width: 400px;
+    height: 600px;
+    border: 2px solid black;
+}
+
+
+div.table {
+    display: table;
+    border-collapse: collapse;
+}
+div.tr {
+    display: table-row;
+}
+div.td {
+    display: table-cell;
+    border: 1px solid #CCC;
+}
+div.th {
+    display: table-cell;
+    font-weight: bold;
+}
+
+.date-string {
+    font-size: small;
+    font-family: monospace;
+    color: gray;
+}
+
+label {
+    font-size: small;
+}
+
+.book-id {
+    font-size: small;
+    font-family: monospace;
+    color: gray;
+}
+
+
+td {
+    border: 1px solid gray;
+}
+td.yes-found {
+    background-color: lime;
+}
+td.not-found {
+    background-color: maroon;
+}
+table {
+    font-size: small;
+    border-collapse: collapse;
+}
+
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+nav ul li {
+    float: left;
+    width: 100px;
+    border: 1px solid lightgray;
+    color: gray;
+    margin: 2px;
+}
+nav ul li.active {
+    border: 1px solid black;
+    color: black;
+}
+
+.tab-panel {
+    display: none;
+}
+.tab-panel.active {
+    display: block;
+}
+

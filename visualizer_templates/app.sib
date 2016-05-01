@@ -271,9 +271,7 @@
 ;; </cheap tab switcher>
 
 
-;; (load-book-list)
-
-
+(load-book-list)
 
 
 

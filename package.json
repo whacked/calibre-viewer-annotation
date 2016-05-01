@@ -1,0 +1,19 @@
+{
+  "name": "annotation-manager",
+  "version": "0.0.1",
+  "main": "main.js",
+  "dependencies": {
+    "epub": "^0.1.6",
+    "html-entities": "^1.2.0",
+    "mithril": "^0.2.4",
+    "seduce": "0.0.4",
+    "simple-xpath-position": "^1.0.0",
+    "sqlite3": "^3.1.3",
+    "striptags": "^2.1.1",
+    "xpath-range": "0.0.6"
+  },
+  "devDependencies": {
+    "electron": "^0.4.1",
+    "electron-prebuilt": "^0.37.7"
+  }
+}
