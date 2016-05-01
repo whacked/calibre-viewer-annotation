@@ -410,11 +410,3 @@
    (m.endComputation)
    ))
 ;; </file list setup>
-
-;; output to js
-(comment
- (scoped
-  (var json-out-path "/tmp/out.json")
-  (fs.writeFile json-out-path
-                (JSON.stringify output null 2))))
-
