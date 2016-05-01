@@ -1,0 +1,466 @@
+;; make sure init.sib has been run!
+;; reload css
+(scoped
+ (var all-link (document.getElementsByTagName "link")
+      i 0)
+ (while (< i all-link.length)
+        (var link (get all-link i))
+        (when (< -1 (|> (link.getAttribute "type")
+                        (.indexOf "css")))
+              (console.log "reload " link)
+              (assign link.href (+ link.href "?t=" (|> (new Date)
+                                                       .getTime))))
+        (incr i)))
+
+;; model defs
+(var Range (lambda (data)
+                   (assign
+                    this.id          data.id
+                    this.start       data.start
+                    this.end         data.end
+                    this.startOffset data.startOffset
+                    this.endOffset   data.endOffset
+                    this.annotation  data.annotation)
+                   this)
+     Annotation (lambda (data)
+                        (assign this.id      data.id
+                                this.uri     data.uri
+                                this.title   data.title
+                                this.text    data.text
+                                this.quote   data.quote
+                                this.user    data.user
+                                this.extras  data.extras
+                                this.created data.created
+                                this.updated data.updated
+                                this._extras (JSON.parse data.extras)
+                                this._ranges null)
+                        (assign this.get-ranges
+                                (#> (when this._ranges
+                                          this._ranges)
+                                    (assign this._ranges
+                                            ["STUFF"]))
+                                this.get-extras
+                                (lambda (key)
+                                        (get this._extras key)))
+                        this))
+;; from calibre library `books` table
+(var Book
+     (lambda (data)
+             (assign this.id            data.id
+                     this.title         data.title
+                     this.sort          data.sort
+                     this.timestamp     data.timestamp
+                     this.pubdate       data.pubdate
+                     this.series_index  data.series_index
+                     this.author_sort   data.author_sort
+                     this.isbn          data.isbn
+                     this.lccn          data.lccn
+                     this.path          data.path
+                     this.flags         data.flags
+                     this.uuid          data.uuid
+                     this.has_cover     data.has_cover
+                     this.last_modified data.last_modified)
+             this))
+
+;; annotation interaction
+(var mAnnot {view: (lambda (ctrl ann)
+                           (m "div.tr"
+                              [(m "div.td .date-string"
+                                  (|> ann.created
+                                      (.toString)
+                                      (.substr 0 10)))
+                                (m "div.td" ann.text)
+                                (m "div.td" ann.quote)]))})
+(var m-ann {vm: (scoped
+                 (var vm {})
+                 (assign vm.init
+                         (#>
+                          (assign vm.book (m.prop null)
+                                  vm.list (m.prop [])
+                                  vm.query (m.prop "")
+                                  vm.ignorecase (m.prop true))))
+                 vm)
+             controller: (#> (m-ann.vm.init))
+             view: (lambda ()
+                           (var book (m-ann.vm.book))
+                           (ternary book
+                                    (m "div"
+                                       [(m "h3" [book.title
+                                                  " "
+                                                  (m "button[type=button]"
+                                                     {onclick: (#> (find-and-open-epub-by-id book.id))}
+                                                     "open")
+                                                  ])
+                                         (m "div"
+                                            [(m "input" {onkeyup: (m.withAttr "value" m-ann.vm.query)
+                                                          value: (m-ann.vm.query)
+                                                          })
+                                              (m "label"
+                                                 [(m "input[type=checkbox]"
+                                                     {onclick: (m.withAttr "checked" m-ann.vm.ignorecase)
+                                                       checked: (m-ann.vm.ignorecase)})
+                                                   "case insensitive search"
+                                                   ])])
+                                         (m "div.table"
+                                            (scoped
+                                             (var rtn [(m "div.tr"
+                                                          [(m "div.th" "date")
+                                                            (m "div.th" "text")
+                                                            (m "div.th" "quote")])]
+                                                  RE (new RegExp
+                                                          (m-ann.vm.query)
+                                                          (ternary (m-ann.vm.ignorecase) "i" "")))
+                                             (each ann (m-ann.vm.list)
+                                                   (when (or (and ann.quote (ann.quote.match RE))
+                                                             (and ann.text (ann.text.match RE)))
+                                                         (rtn.push (m.component mAnnot ann))))
+                                             rtn))
+                                         ])
+                                    (m "div" "select a book"))
+                           )})
+
+(m.mount (document.getElementById "annotation-panel")
+         {controller: m-ann.controller view: m-ann.view})
+
+(def refresh-annotation-list ()
+     (var book (m-ann.vm.book))
+     (when book
+           (a-db.serialize
+            (#>
+             (m.startComputation)
+             (var ann-list [])
+             (a-db.each (a-sql.getAnnotationsWithTitleLike {title: (+ "%" book.title "%")})
+                        (lambda (err row)
+                                ;; (console.log row.id)
+                                (ann-list.push (new Annotation row)))
+                        (#>
+                         (console.log ann-list.length)
+                         (m-ann.vm.list ann-list)
+                         ;; trigger rerender
+                         (m.endComputation)))))))
+
+
+(def find-and-open-epub-by-id (book-id)
+     (c-db.serialize
+      (#>
+       (c-db.each (c-sql.getEpubPathInfoById book-id)
+                  (lambda (err row)
+                          ;; (console.log "loading " row.id)
+                          (var epub-filepath (path.join $CALIBRE-HOME
+                                                        row.path
+                                                        (+ row.name ".epub")))
+                          (console.log
+                           (+ "opening: " epub-filepath "..."))
+                          (try
+                           (scoped (fs.statSync epub-filepath)
+                                   (exec (+ "ebook-viewer '" epub-filepath "'")))))))))
+
+;; book interaction
+(var mBook {view: (lambda (ctrl book)
+                          (var active-book (m-ann.vm.book))
+                          (m "div.tr"
+                             [(m "div.td .book-id" book.id)
+                               (m "div.td"
+                                  [(ternary (and active-book
+                                                 (= active-book.title book.title))
+                                            (m "b"
+                                               book.title)
+                                            (m "a"
+                                               {href: "#"
+                                                 onclick: (lambda (evt)
+                                                                  (m-ann.vm.book book)
+                                                                  (refresh-annotation-list))}
+                                               book.title))])
+                               (m "div.td" book.author_sort)]))})
+
+(var m-bk {vm: (scoped
+                 (var vm {})
+                 (assign vm.init
+                         (#>
+                          (assign vm.list (m.prop [])
+                                  vm.query (m.prop "")
+                                  vm.ignorecase (m.prop true))))
+                 vm)
+            controller: (#> (m-bk.vm.init))
+            view: (#>
+                   (m "div"
+                      [(m "h3" "search for books in calibre DB")
+                        (m "div"
+                           [(m "input" {onkeyup: (m.withAttr "value" m-bk.vm.query)
+                                         value: (m-bk.vm.query)
+                                         })
+                             (m "label"
+                                [(m "input[type=checkbox]"
+                                    {onclick: (m.withAttr "checked" m-bk.vm.ignorecase)
+                                      checked: (m-bk.vm.ignorecase)})
+                                  "case insensitive search"
+                                  ])])
+                        (m "div.table" (scoped
+                                        (var RE (new RegExp (m-bk.vm.query)
+                                                     (ternary (m-bk.vm.ignorecase) "i" ""))
+                                             rtn [])
+                                        (each book (m-bk.vm.list)
+                                              (when (or (book.title.match RE)
+                                                        (book.author_sort.match RE))
+                                                    (rtn.push (m.component mBook book))))
+                                        rtn))]))})
+
+(m.mount (document.getElementById "book-panel")
+         {controller: m-bk.controller
+           view: m-bk.view})
+
+;; load books
+(def load-book-list ()
+     (c-db.serialize
+      (#>
+       (console.log "loading books...")
+       (m.startComputation)
+       (var book-list [])
+       (c-db.each (c-sql.getAllEpubBooks)
+                  (lambda (err row)
+                          ;; (console.log "loading " row.id)
+                          (book-list.push (new Book row)))
+                  (#>
+                   (m-bk.vm.list book-list)
+                   (m.endComputation))))))
+
+;; (clipboard.writeText "TSET!!")
+
+
+;; <cheap tab switcher>
+(var m-tab
+     {vm: (scoped
+           (var vm {panel-list []})
+           (assign vm.init
+                   (#>
+                    (var i 0
+                         el-list (document.getElementsByClassName "tab-panel"))
+                    (while (< i el-list.length)
+                           (var panel (get el-list i))
+                           (m-tab.vm.panel-list.push panel)
+                           (incr i))
+                    ))
+           vm)
+       view: (#(ctrl)
+               (m "ul"
+                  (scoped
+                   (var body [])
+                   (each panel m-tab.vm.panel-list
+                         (var panel-id (panel.getAttribute "id"))
+                         (body.push (m "li"
+                                       {onclick: (#(evt)
+                                                   (var i 0
+                                                        sw-list evt.target.parentNode.childNodes)
+                                                   (while (< i sw-list.length)
+                                                          (|> (get sw-list i)
+                                                              (.setAttribute "class" ""))
+                                                          (incr i))
+                                                   (evt.target.setAttribute "class" "active")
+                                                   (each p m-tab.vm.panel-list
+                                                         (p.setAttribute
+                                                          "class"
+                                                          (.concat "tab-panel"
+                                                                   (ternary (= panel-id (p.getAttribute "id"))
+                                                                            " active" "")))))}
+                                       panel-id))
+                         )
+                   body)))})
+(m.mount (document.getElementById "tab-switcher")
+         {controller: m-tab.vm.init
+           view: m-tab.view})
+;; </cheap tab switcher>
+
+
+;; (load-book-list)
+
+
+
+
+
+(var EPub      (require "epub")
+     striptags (require "striptags")
+     jsyaml    (require "js-yaml")
+     entities  (scoped (var Entities (get (require "html-entities") "AllHtmlEntities"))
+                       (new Entities))
+     Range (get (require "xpath-range") 'Range))
+
+
+
+
+
+
+
+(var epub null
+     yml null
+     
+     failure-list []
+     arr-pres []
+     html-map {}
+     spine-map {}
+     re-whitespace (new RegExp "\\s+")
+     output {}
+
+     cfijs-path (path.join __dirname
+                           ".."
+                           "visualizer_templates"
+                           "cfi.js")
+
+     ;; FIXME
+     ;; globals used by searchlogic
+     yml {highlight_list: []}
+     
+     )
+
+(var mEntry (#(data)
+              {asin: data.asin
+                customerId: data.customerId
+                embeddedId: data.embeddedId
+                endLocation: data.endLocation
+                highlight: data.highlight
+                howLongAgo: data.howLongAgo
+                startLocation: data.startLocation
+                timestamp: data.timestamp
+                note: data.note
+
+                verification: (m.prop {})
+                }))
+
+;; <file list setup>
+;; yml viewer
+(var m-fcontent
+     {vm: (scoped
+           (var vm {})
+           (assign vm.init
+                   (#> (assign vm.file-path (m.prop null)
+                               vm.content (m.prop null))))
+           vm)
+       view: (#(ctrl)
+               (m "div"
+                  (scoped
+                   (var fc (m-fcontent.vm.content)
+                        body [])
+                   (body.push
+                    (m "pre"
+                       (ternary fc
+                                (+ "selected: "
+                                   (m-result.vm.title)
+                                   "; file length: "
+                                   fc.length)
+                                "select a file")))
+                   body)))
+       })
+
+(m.mount (document.getElementById "file-content")
+         {controller: m-fcontent.vm.init view: m-fcontent.view})
+
+
+(var m-result
+     {hdr-list: ["check?" "timestamp" "location" "found?" "highlight" "note" "verification"]
+       vm: (scoped
+            (var vm {})
+            (assign vm.init
+                    (#>
+                     (assign vm.title (m.prop null)
+                             vm.entry-list (m.prop []))))
+            vm)
+       view: (#(ctrl)
+               (var vm m-result.vm)
+               (m "div"
+                  [(m "button"
+                      {onclick: (#>
+                                 (console.log "reconcile-all() please"))}
+                      "RECONCILE ALL")
+                    ;; n_active_search may somehow not get decremented properly; attempt to force break out of the timer loop
+                    (m "button"
+                       {onclick: (#>
+                                  (assign n_active_search 0)
+                                  (clearInterval monster-timer)
+                                  )}
+                       "attempt to terminate reconcilation")
+                    (m "table"
+                       (scoped
+                        (var body [(m "tr" (.map m-result.hdr-list (#(k) (m "th" k))))])
+                        (each entry (vm.entry-list)
+                              (var entry-id (make-entry-id entry)
+                                   result (or (get all-result entry-id) {}))
+                              (body.push
+                               (m "tr"
+                                  (m-result.hdr-list.map
+                                   (#(hdr)
+                                     (var entry-val (get entry hdr))
+                                     (m "td"
+                                        (if (= hdr "check?")
+                                            (m "button"
+                                               {onclick: (#>
+                                                          (when result.source
+                                                                (console.log "CLICK CHECK!")
+                                                                (console.log result)
+                                                                (console.log entry)
+                                                                (m.startComputation)
+                                                                (launch-and-find result.source entry))
+                                                          
+                                                          )}
+                                               "check")
+
+                                            (= hdr "timestamp")
+                                            (.toString (new Date entry-val))
+
+                                            (= hdr "location")
+                                            (+ ""
+                                               entry.startLocation "~"
+                                               entry.endLocation " ("
+                                               (- entry.endLocation entry.startLocation)
+                                               ")")
+                                            
+                                            (= hdr "found?")
+                                            (scoped
+                                             (ternary (and (get result "score")
+                                                           (< 0 (get result "score")))
+                                                      (scoped
+                                                       (m "div"
+                                                          {class: "yes-found"}
+                                                          (+ ""
+                                                             (|> (get result "score")
+                                                                 (.toFixed 3))
+                                                             " "
+                                                             (get result "source"))))
+                                                      (m "div" {class: "not-found"})))
+                                            
+                                            ;; leave blank on init
+                                            (= hdr "verification")
+                                            (scoped
+                                             (var verf (entry.verification))
+                                             (m "div"
+                                                {id: (+ "td-sel-" entry-id)
+                                                  class: "td-sel"
+                                                  style: {background-color: (ternary verf.score
+                                                                             (score2rgb verf.score)
+                                                                             "")}}
+                                                (get verf 'content)))
+
+                                            true
+                                            (m "div" (ternary entry-val
+                                                             (m.trust entry-val)
+                                                             ""))))
+                                     
+                                     ))))
+                              
+                              )
+                        body
+                        ))])
+               )
+
+       })
+
+(m.mount (document.getElementById "result-display")
+         {controller: m-result.vm.init view: m-result.view})
+
+
+;; FIXME: unify arr-pres and skip this inefficiency
+(def get-source-html (source-path)
+     (var rtn null)
+     (each pres arr-pres
+           (if rtn (return))
+           (if (= pres.href source-path)
+               (assign rtn (get html-map pres.id))))
+     rtn)

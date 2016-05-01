@@ -1,0 +1,45 @@
+;; imports
+(var fs        (require "fs")
+     path      (require "path")
+     sqlite3   (require "sqlite3") ;; https://github.com/mapbox/node-sqlite3
+     yesql     (require "seduce") ;; https://github.com/bcarrell/seduce
+     m         (require "mithril")
+     clipboard (require "clipboard")
+     exec      (get (require "child_process") "exec"))
+
+;; write to browser
+;; (console.log "HELLO")
+;; write to console
+;; (process.stdout.write "HI\n")
+
+(var $ADB-FILENAME "ebook-viewer-annotation.db"
+     $HOME (get process.env (ternary (= process.platform "win32")
+                                     "USERPROFILE"
+                                     "HOME"))
+     $CALIBRE-HOME (path.join $HOME "Calibre Library")
+     $ADB-FILEPATH (path.join $HOME $ADB-FILENAME)
+     $CDB-FILEPATH (path.join $CALIBRE-HOME "metadata.db"))
+
+;; TODO: handle not exists. rest is pointless if not exist!
+(try
+ (fs.statSync $ADB-FILEPATH)
+ (fs.statSync $CDB-FILEPATH))
+
+;; annotation resources
+(var a-db (new sqlite3.Database $ADB-FILEPATH)
+     a-sql (yesql "sql/main.sql"))
+
+;; calibre resources
+(var c-db (new sqlite3.Database $CDB-FILEPATH)
+     c-sql (yesql "sql/calibre.sql"))
+
+(def cleanup ()
+     (a-db.close)
+     (c-db.close)
+     (console.log "cleanup ok"))
+
+(assign window.onunload
+        (#>
+         (cleanup)))
+
+(console.log "initialized.")
