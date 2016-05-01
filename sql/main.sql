@@ -33,3 +33,14 @@ annotation AS a, range AS r
 WHERE r.annotation_id = a.id
 AND r.start = :start AND r.startOffset = :startOffset
 AND r.end = :end AND r.endOffset = :endOffset;
+
+-- name: insertAnnotation
+INSERT INTO annotation (created, updated, title, text, quote, extras, uri, user)
+VALUES (:created, :updated, :title, :text, :quote, :extras, :uri, :user);
+
+-- name: appendRangeToAnnotation
+INSERT INTO range (start, end, startOffset, endOffset, annotation_id)
+VALUES (:start, :end, :startOffset, :endOffset, :annotation_id);
+
+-- name: getLastInsertedId
+SELECT last_insert_rowid() AS id;

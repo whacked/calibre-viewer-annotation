@@ -10,12 +10,7 @@
 ;; load epub
 (def process-epub (epub)
      (console.log "PROCESSING EPUB!")
-     ;; build a entry list sorted in chapter order
-     ;; array of manifest's `publication resources`.
      
-     ;; return an mapping of
-     ;; source-path -> html text
-
      (var html-match (new RegExp "\\.htm.+$"))
      (assign arr-pres []
              html-map {})
@@ -83,11 +78,11 @@
 
 (def launch-and-find (source-filepath entry)
      ;; ;; for debugging
-     ;; (assign my-source-filepath source-filepath
-     ;;         my-entry entry)
-     ;; (var source-filepath my-source-filepath
-     ;;      entry my-entry)
-     ;; (console.clear)
+     (assign my-source-filepath source-filepath
+             my-entry entry)
+     (var source-filepath my-source-filepath
+          entry my-entry)
+     (console.clear)
 
      (var panel (document.getElementById "matcher-panel"))
      (assign panel.innerHTML "")
@@ -279,7 +274,8 @@
        (set output entry.highlight ann)
        
        (entry.verification {content: verif-string
-                             score: coverage-score})
+                             score: coverage-score
+                             annotation: ann})
 
        ;; check if the entry is in db
        ;; FIXME: should really just cache all and compare against cache
@@ -380,7 +376,6 @@
    (m.endComputation)
    ))
 ;; </file list setup>
-
 
 ;; output to js
 (comment
