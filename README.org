@@ -52,72 +52,80 @@
      incorporate the annotations. By default it will create a sqlite
      database =ebook-viewer-annotation.db= into your home directory.
      
-* importing annotations
+* importing + managing annotations (update 2016-05-01)
+
+  currently only works with epub books
   
-  as of now, this is a harder problem. my next investigation in this
-  area will follow things discussed below like in
-  =AnnotationProcessor.py= and =anchortext.py=
+  *USE AT YOUR OWN RISK* this includes a little manager app using [[http://electron.atom.io/][electron]] that aims to help importing annotations into the current =ebook viewer annotation= database.
   
-** USAGE (update 2016-04-23)
+  This aims to provide a GUI that performs the procedure described in =import_utility.rb=
+  
+** setup + requirements
 
-   prelim importer logic. very hacky.
+   see file:package.json for npm dependencies. Unfortunately, you will need to build the [[https://github.com/mapbox/node-sqlite3][node sqlite3]] extension, which is rather tricky. A non-working build will cause the electron app to throw an exception on startup.
 
-   The general usage process is encapsulated and described in the =import_utility.rb= script. It relies on these components:
-   
-*** generate highlights yml files
+*** setting up electron sqlite3 extension
 
-    for kindle, this uses =get_kindle_highlights.rb=, it relies on
-    [[https://github.com/speric/kindle-highlights][speric's kindle-highlights]] so you will need to run =gem install
-    kindle-highlights=. You can either enter your login information
-    at run-time, or store your login information in a file at
-    =~/.aws/kindle= or =~/.aws/kindle.gpg= if you have the =gpgme=
-    gem installed.
+    steps after =npm install sqlite3= or however you've installed it
     
-    this script and does some additional matching and sanity checking
-    on top of =kindle-highlights=. *In particular, speric's version
-    does not handle text notes attached to highlights*; this script
-    does a 2-pass to put them together.
+    - =npm install -g nw-gyp=
+    - get electron version with =electron -v=
+    - ref http://verysimple.com/2015/05/30/using-node_sqlite3-with-electron/ (careful with the =cd= and =lib= paths)
+      also https://github.com/electron/electron/blob/master/docs/tutorial/using-native-node-modules.md,
+      also http://stackoverflow.com/questions/32504307/how-to-use-sqlite3-module-with-electron
 
-*** reconcile annotation positions with =nw-extractor=
+**** example build procedure sqlite3 for electron on recent ubuntu using electron =v0.37.7=
 
-    what it does: displays externally stored (in e.g. yml files)
-    annotations, tries to locate the annotations within a given epub
-    file, and derives calibre-compatible =xpath= entities to export
+     #+BEGIN_SRC sh :eval never
+     cd node_modules/sqlite3
+     npm run prepublish
+     node-gyp configure --module_name=node_sqlite3 --module_path=lib/binding/node-v47-linux-x64
+     node-gyp rebuild --target=0.37.7 --arch=x64 --target_platform=linux --dist-url=https://atom.io/download/atom-shell --module_name=node_sqlite3 --module_path=lib/binding/node-v47-linux-x64
+     mkdir lib/binding/electron-v0.37-linux-x64
+     mv build/Release/node_sqlite3.node lib/binding/electron-v0.37-linux-x64
+     #+END_SRC
 
-**** npm-installed dependencies
+** USAGE
+   
+   start the application with =electron .= from the current project directory (where =package.json= is).
 
-     - nw (node webkit)
-     - glob, html-entities, js-yaml, xpath-range
-     - browserify (needed for xpath-range)
-     - epub
-     - striptags
+*** viewer panel
 
-**** how to use it
+    - search calibre books (currently *hard-coded* to =~/Calibre Library/metadata.db=)
+    - select a book to load annotations you have for that book (currently *hard-coded* to =~/ebook-viewer-annotation.db=)
+    - open the selected book using =ebook-viewer= (assumes your path is set up correctly)
 
-     basically check if the left column (external notes) matches the
-     text in the right column (inside ebook). Green = good match,
-     where yellow is worse and red is probably fail.
+*** match-tool panel
 
-     At the bottom is a "RECONCILE ALL" button, which will attempt to
-     create an importable json file containing the notes with =xpath=
-     addresses attached to them.
+    for reconciling structured highlight files (e.g. downloaded) with your book file, and output the result or add them to the viewer annotation database.
 
-**** how xpath derivation works
-     
-     parent window opens a child window that loads the corresponding
-     ebook chapter file, and searches for the best matching string,
-     then derives the xpath-range via the =doMagic= logic (see below),
-     and returns it to the parent process.
+**** generate highlights yml files
 
-     this method is very ugly (uses setTimer because it doesn't know
-     when the child window is finished loading). If you know a fix
-     please let me know!
+     for kindle, this uses =get_kindle_highlights.rb=, it relies on
+     [[https://github.com/speric/kindle-highlights][speric's kindle-highlights]] so you will need to run =gem install
+     kindle-highlights=. You can either enter your login information
+     at run-time, or store your login information in a file at
+     =~/.aws/kindle= or =~/.aws/kindle.gpg= if you have the =gpgme=
+     gem installed.
+    
+     this script and does some additional matching and sanity checking
+     on top of =kindle-highlights=. *In particular, speric's version
+     does not handle text notes attached to highlights*; this script
+     does a 2-pass to put them together.
 
-**** check the highlights + click the =test= button to see if it works
+**** reconcile annotation positions with book + insert to database
 
-     then scroll to the bottom and click the =reconcile= button and hope it works for everything
+     - select a yml file (currently hard-coded to expect yml files in =kindle-highlights=. This should change in the future.)
+     - it will try to load the epub from Calibre, and match highlight text with the epub text.
+     - click the "check" button to visually check it finds the text correctly in the book.
+     - if the check is successful you may get a button to directly insert to your annotation database
+     - you can output the results of reconciliation to a json file with =save output to file=
 
-*** import the output json and write to the ebook-viewer-annotation database
+**** reconcile all
+
+     cycles through every entry that hasn't been verified and tries to verify them automatically. This uses an ugly setTimeout mechanism (because the match process takes some time and running all in parallel causes it to break)
+
+*** importing the output json and write to the ebook-viewer-annotation database
 
     =python importjson.py xpath-matched-output.json ebook-file.epub=
 
@@ -130,13 +138,12 @@
     if you are lucky, everything will find its proper position.
 
     once everything looks ok, apply the changes with
-   
+    
     =DRY_RUN=FALSE python importjson.py xpath-matched-output.json ebook-file.epub=
 
 ** text matching logic
 
-   logic is found variously in =nw-extractor/index.html= as well as [[https://github.com/jbr/sibilant][Sibilant]] and corresponding javascript output files in =nw-extractor/js=.
-   The Sibilant code iteration uses [[https://github.com/skeeto/skewer-mode][Emacs skewer-mode]] and [[https://github.com/whacked/sibilant-skewer][sibilant-skewer]].
+   logic is in [[https://github.com/jbr/sibilant][Sibilant]] files in =manager/js/=; the javascript output is generated by e.g. =sibilant searchlogic.sib -m -o .=
    
 * development
   
@@ -154,6 +161,8 @@
   #+END_SRC
   
   and it should launch the viewer with the changes applied.
+
+  for the electron live development using sibilant, also see [[https://github.com/skeeto/skewer-mode][Emacs skewer-mode]] and [[https://github.com/whacked/sibilant-skewer][sibilant-skewer]]
 
 ** building source files
 
