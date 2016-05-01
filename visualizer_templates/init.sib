@@ -5,7 +5,8 @@
      yesql     (require "seduce") ;; https://github.com/bcarrell/seduce
      m         (require "mithril")
      clipboard (require "clipboard")
-     exec      (get (require "child_process") "exec"))
+     exec      (get (require "child_process") "exec")
+     username  (require "username"))
 
 ;; write to browser
 ;; (console.log "HELLO")
@@ -18,7 +19,8 @@
                                      "HOME"))
      $CALIBRE-HOME (path.join $HOME "Calibre Library")
      $ADB-FILEPATH (path.join $HOME $ADB-FILENAME)
-     $CDB-FILEPATH (path.join $CALIBRE-HOME "metadata.db"))
+     $CDB-FILEPATH (path.join $CALIBRE-HOME "metadata.db")
+     $USERNAME null)
 
 ;; TODO: handle not exists. rest is pointless if not exist!
 (try
@@ -41,5 +43,9 @@
 (assign window.onunload
         (#>
          (cleanup)))
+
+(|> (username)
+    (.then
+     (#> (assign $USERNAME #0))))
 
 (console.log "initialized.")
