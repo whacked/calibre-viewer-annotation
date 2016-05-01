@@ -70,12 +70,14 @@ if not epub_id.nil?
   puts epub_path
   puts "======================"
 
-  Dir.chdir('nw-extractor')
-  `nw . '#{epub_path}' '#{yml_path}'`
+  # NOTE: will no longer work:
+  # Dir.chdir('nw-extractor')
+  # `nw . '#{epub_path}' '#{yml_path}'`
+  # json_path = yml_path.sub(".yml", ".json")
+  # Dir.chdir(CWD)
+  puts "use the match-tool and generate the output json."
 
-  json_path = yml_path.sub(".yml", ".json")
-  Dir.chdir(CWD)
-  puts "RUN THIS:"
-  puts " python importjson.py '#{json_path}' '#{epub_path}'"
+  puts "THEN RUN THIS:"
+  puts " python importjson.py 'json_path' '#{epub_path}'"
 end
 
