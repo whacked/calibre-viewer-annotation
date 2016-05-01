@@ -1,12 +1,3 @@
-;; should be unnecessary
-;; (var xpath-range (require (|> (path.join __dirname
-;;                          ".."
-;;                          "nw-extractor"
-;;                          "node_modules"
-;;                          "xpath-range"
-;;                          "xpath-range-bundle.js")
-;;               (path.resolve))))
-
 ;; cache for all annotations for a book given its title
 (var acache { data: {}
               load-for-title: (#(title)
