@@ -356,7 +356,7 @@
 
 
 (var m-result
-     {hdr-list: ["check?" "timestamp" "location" "found?"
+     {hdr-list: ["check?" "info"
                   "highlight" "note" "verification"
                   "in db?"]
        vm: (scoped
@@ -396,9 +396,9 @@
                                         (if (= hdr "check?")
                                             (m "button"
                                                {onclick: (#>
+                                                          (console.log "CLICK CHECK!")
+                                                          (console.log result)
                                                           (when result.source
-                                                                (console.log "CLICK CHECK!")
-                                                                (console.log result)
                                                                 (console.log entry)
                                                                 (m.startComputation)
                                                                 (launch-and-find result.source entry))
@@ -406,29 +406,27 @@
                                                           )}
                                                "check")
 
-                                            (= hdr "timestamp")
-                                            (.toString (new Date entry-val))
+                                            (= hdr "info")
+                                            (m "div"
+                                               [(ternary (and score (< 0 score))
+                                                          (scoped
+                                                           (m "div"
+                                                              {class: "yes-found"}
+                                                              (+ ""
+                                                                 (|> score
+                                                                     (.toFixed 3))
+                                                                 " "
+                                                                 result.source)))
+                                                          (m "div" {class: "not-found"}))
+                                                 (m "div"
+                                                    (+ ""
+                                                       entry.startLocation "~"
+                                                       entry.endLocation " ("
+                                                       (- entry.endLocation entry.startLocation)
+                                                       ")"))
+                                                 (m "div"
+                                                   (.toString (new Date entry.timestamp)))])
 
-                                            (= hdr "location")
-                                            (+ ""
-                                               entry.startLocation "~"
-                                               entry.endLocation " ("
-                                               (- entry.endLocation entry.startLocation)
-                                               ")")
-                                            
-                                            (= hdr "found?")
-                                            (scoped
-                                             (ternary (and score (< 0 score))
-                                                      (scoped
-                                                       (m "div"
-                                                          {class: "yes-found"}
-                                                          (+ ""
-                                                             (|> score
-                                                                 (.toFixed 3))
-                                                             " "
-                                                             result.source)))
-                                                      (m "div" {class: "not-found"})))
-                                            
                                             ;; leave blank on init
                                             (= hdr "verification")
                                             (scoped
@@ -444,10 +442,73 @@
                                             (= hdr "in db?")
                                             (m "div"
                                                (scoped
-                                                (var db-entry (entry.db-entry))
-                                                (ternary db-entry
-                                                         db-entry.quote
-                                                         "")))
+                                                (var db-entry (entry.db-entry)
+                                                     verf (entry.verification))
+                                                (if db-entry
+                                                    db-entry.quote
+
+                                                    verf.annotation
+                                                    (m "button"
+                                                       {onclick: (#>
+                                                                  (m.startComputation)
+                                                                  (var new-annotation { created: (|> (new Date entry.timestamp)
+                                                                                                     (.toISOString)
+                                                                                                     (replace "T" " "))
+                                                                                        updated: (|> (new Date)
+                                                                                                     (.toISOString)
+                                                                                                     (replace "T" " "))
+                                                                                        title: verf.annotation.title
+                                                                                        text: entry.note
+                                                                                        quote: entry.highlight
+                                                                                        extras: verf.annotation.extras
+                                                                                        uri: verf.annotation.uri
+                                                                                        user: $USERNAME})
+                                                                  (a-db.serialize
+                                                                   (#>
+                                                                    ;; BAD!
+                                                                    ;; (a-db.run (a-sql.insertAnnotation new-annotation))
+                                                                    ;; the quote escaping is incredibly nasty >:-(
+                                                                    ;; manually convert it to a parameterized query
+                                                                    (a-db.run
+                                                                     (|> (a-sql.insertAnnotation)
+                                                                         (replace-all "null" "?"))
+                                                                     [ new-annotation.created
+                                                                       new-annotation.updated
+                                                                       new-annotation.title
+                                                                       new-annotation.text
+                                                                       new-annotation.quote
+                                                                       (JSON.stringify new-annotation.extras)
+                                                                       new-annotation.uri
+                                                                       new-annotation.user])
+                                                                    (a-db.serialize
+                                                                     (#>
+                                                                      (a-db.get (a-sql.getLastInsertedId)
+                                                                                (#(err row)
+                                                                                  (console.log "INSERTED:" row.id)
+                                                                                  (assign new-annotation.id row.id)
+                                                                                  ;; append range object
+                                                                                  (var rng (get verf.annotation.ranges 0)
+                                                                                       sql (a-sql.appendRangeToAnnotation
+                                                                                            { :start       rng.start
+                                                                                              :end         rng.end
+                                                                                              :startOffset rng.startOffset
+                                                                                              :endOffset   rng.endOffset
+                                                                                              :annotation_id new-annotation.id}))
+                                                                                  (console.log sql)
+                                                                                  (a-db.run sql
+                                                                                            (#(err row)
+                                                                                              (entry.db-entry new-annotation)
+                                                                                              (m.endComputation)
+                                                                                              (console.log "OK!!!!")))
+                                                                                  ))))))
+                                                                  
+                                                                  
+                                                                  ;; (entry.db-entry )
+                                                                  )}
+                                                       "add to db")
+
+                                                    true
+                                                    "")))
 
                                             true
                                             (m "div" (ternary entry-val
