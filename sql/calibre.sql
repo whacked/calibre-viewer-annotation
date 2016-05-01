@@ -1,3 +1,5 @@
+-- to be run against Calibre's metadata.db
+
 -- name: getAllEpubBooks
 SELECT b.*
 FROM books AS b, data AS d
