@@ -1,0 +1,391 @@
+;; should be unnecessary
+;; (var xpath-range (require (|> (path.join __dirname
+;;                          ".."
+;;                          "nw-extractor"
+;;                          "node_modules"
+;;                          "xpath-range"
+;;                          "xpath-range-bundle.js")
+;;               (path.resolve))))
+
+;; load epub
+(def process-epub (epub)
+     (console.log "PROCESSING EPUB!")
+     ;; build a entry list sorted in chapter order
+     ;; array of manifest's `publication resources`.
+     
+     ;; return an mapping of
+     ;; source-path -> html text
+
+     (var html-match (new RegExp "\\.htm.+$"))
+     (assign arr-pres []
+             html-map {})
+     (each key (Object.keys epub.manifest)
+           (var pres (get epub.manifest key))
+           (when (pres.href.match html-match)
+                 (arr-pres.push pres)))
+     (console.log (+ "finished processing epub manifest, length: " arr-pres.length))
+
+     ;; probably redundant for this logic
+     ;; searchlogic.sib
+     ;; (load-all-publication-resource)
+
+     (each (pres entry-index) arr-pres
+           ;; (console.log (+ "proc arr pres... " entry-index " " pres.id ", " pres.href))
+           ;; note we used to do
+           ;; html_map[filepath] = fs.readFileSync(filepath, "utf-8");
+           ;; which is now replaced by the `getFile` block
+           ;; this is now implicit because `epub` only supports utf-8
+           ;; (see https://github.com/julien-c/epub)
+           (epub.getFile
+            pres.id
+            (#(err data mimetype)
+              (console.log "GOT FILE " pres.id)
+              
+              (set html-map pres.id (data.toString "utf8"))
+              ;; unused?
+              (set spine-map pres.href (+ 1 entry-index))
+
+              ;; run once, after all resources have been populated
+              (when (= (get (Object.keys html-map) 'length)
+                       arr-pres.length)
+                    (console.log "OK, READY.")
+                    (m.startComputation)
+                    (arr-pres.sort
+                     (#(a b)
+                       (- (get-numeric a.href)
+                          (get-numeric b.href))))
+
+                    ;; (build-candidate-mapping):
+                    ;; <searchlogic.sib>
+                    (run-naive-search (m-result.vm.entry-list))
+                    (run-tokenized-search (m-result.vm.entry-list))
+                    ;; </searchlogic.sib>
+
+                    ;; remove?
+                    (each entry (m-result.vm.entry-list)
+                          (when (not (maybe-result entry))
+                                (failure-list.push entry.highlight)))
+                    
+                    (console.log
+                     (+ (get (Object.keys all-result) 'length)
+                        " found, "
+                        failure-list.length
+                        " failures ("
+                        (get (m-result.vm.entry-list) 'length)
+                        " total)"))
+
+                    ;; results display
+                    ;; see m-result
+
+                    (m.endComputation)
+
+                    )))))
+
+(def launch-and-find (source-filepath entry)
+     ;; ;; for debugging
+     ;; (assign my-source-filepath source-filepath
+     ;;         my-entry entry)
+     ;; (var source-filepath my-source-filepath
+     ;;      entry my-entry)
+     ;; (console.clear)
+
+     (var panel (document.getElementById "matcher-panel"))
+     (assign panel.innerHTML "")
+     
+     (var ifr (document.createElement "iframe"))
+     (ifr.setAttribute "id" "matcher-window")
+     (panel.appendChild ifr)
+
+     (console.log "LAUNCH AND FIND!" source-filepath)
+     (var doc (get ifr 'contentWindow 'document))
+     
+     (doc.open)
+     (doc.write
+      (replace
+       (get-source-html source-filepath)
+       "</head>"
+       (+ "<script type=\"text/javascript\">"
+          (fs.readFileSync cfijs-path "utf-8")
+          "</script></html>"))
+      ;; (get-source-html source-filepath)
+      )
+     (doc.close)
+     
+     (var ifr (document.getElementById "matcher-window")
+          ifr-window (or ifr.contentWindow ifr))
+
+     ;; it turns out the cfi using this technique is different
+     ;; from the old technique, but in ebook-viewer it seems to
+     ;; show up fine...
+     (assign
+      ifr.onload
+      (#>
+       ;; ;; stick cfi.js into the end so it doesn't affect the xpath preceding it
+       ;; (scoped
+       ;;  (when (not (doc.getElementById "injected"))
+       ;;        (var cfi-script (scoped
+       ;;                         (var script (doc.createElement "script"))
+       ;;                         (script.setAttribute "id" "injected")
+       ;;                         (script.setAttribute "type" "text/javascript")
+       ;;                         (script.setAttribute "src" "cfi.js")
+       ;;                         script)
+       ;;             html-el (get (doc.getElementsByTagName "html") 0))
+       ;;        (html-el.appendChild cfi-script)))
+       
+       (var search-string (clean-string entry.highlight))
+       (if (ifr-window.find search-string)
+           null ;; direct match
+
+           true
+           (do
+            (var sel (ifr-window.getSelection)
+                 ;; repeatedly search for longest substring, truncating from end
+                 search-length search-string.length
+                 finished? false)
+            
+            ;; 1 is nonsensical, but since the corpus is pre-filtered we expect
+            ;; it to find it well before that!
+            (while (and (not finished?)
+                        (> search-length 1))
+                   (decr search-length)
+                   (if (ifr-window.find (search-string.substr 0 search-length))
+                       (do (console.log (+ "breaking from start find on iter: " search-length))
+                           (assign finished? true)
+                           (return))))
+
+            ;; found longest start match, record for merging later
+            (var rng (|> ifr-window
+                         (.getSelection)
+                         (.getRangeAt 0))
+                 startNode rng.startContainer
+                 startOffset rng.startOffset)
+            (sel.removeAllRanges)
+
+            ;; repeatedly search for longest substring, truncating from start
+            (var finished? false
+                 start-index 1)
+            (while (and (not finished?)
+                        (< start-index search-string.length))
+                   (incr start-index)
+                   (if (ifr-window.find (search-string.substr start-index))
+                       (do (console.log (+ "breaking from end find on iter: " start-index))
+                           (assign finished? true)
+                           (return))))
+
+            (var rng (|> ifr-window
+                         (.getSelection)
+                         (.getRangeAt 0))
+                 endNode rng.endContainer
+                 endOffset rng.endOffset)
+            (sel.removeAllRanges)
+
+            (var final-range (ifr-window.document.createRange))
+            (final-range.setStart startNode startOffset)
+            (final-range.setEnd endNode endOffset)
+            (sel.addRange final-range)
+            
+            )
+           )
+
+
+       ;; again, we are assuming the match has succeeded!
+       (var sel (ifr-window.getSelection)
+            verif-string (sel.toString)
+            verif-token-list (verif-string.split re-whitespace)
+            coverage-hit-count (get-corpus-coverage entry.highlight verif-token-list)
+            coverage-score (/ coverage-hit-count verif-token-list.length)
+
+            cur-scroll-x window.scrollX
+            cur-scroll-y window.scrollY)
+
+       ;; somehow an immediate scroll may fail for large texts
+       (setTimeout
+        (#>
+         (console.log "trigger scroll...")
+         ;; this should scroll the highlight so it appears at the top of the viewport
+         ;; (sel.anchorNode.parentNode.scrollIntoView)
+         
+         ;; this tries to scroll the highlight so it appears slightly below the top
+         (ifr-window.scrollTo 0 (scoped
+                                 (var el sel.anchorNode.parentNode
+                                      el-rect (el.getBoundingClientRect)
+                                      abs-top (+ el-rect.top ifr-window.pageYOffset))
+                                 (- abs-top
+                                    (/ ifr-window.innerHeight 4))))
+         
+         ;; this undoes the scroll that may propagate to the parent window
+         (window.scrollTo cur-scroll-x cur-scroll-y))
+        200)
+
+       ;; the old "doMagic()" logic
+       ;; note this requires xpath-range 0.0.6;
+       ;; the newer versions remove BrowserRange
+       (var range (|> ifr-window
+                      (.getSelection)
+                      (.getRangeAt 0))
+            b-range (new Range.BrowserRange range)
+            s-range (b-range.serialize ifr-window.document.body)
+            
+            ;; and the final output
+            ann {
+                 uri: (+ "epub://" (.pop (source-filepath.split path.sep)))
+                  title: epub.metadata.title
+                  created: entry.timestamp
+                  quote: search-string
+                  ranges: [(s-range.toObject)]
+                  extras: {
+                           calibre_bookmark: {
+                                              type: "cfi"
+                                               ;;
+                                               ;; NOTE: we are stripping off the trailing parts of the cfi here.
+                                               ;; i.e., "/2/4/2/140/1:2" becomes "/2/4/2/140"
+                                               ;; 
+                                               ;; this is because when we save the cfi in the child window, we're saving
+                                               ;; the cfi based on the currently rendered DOM without any annotation
+                                               ;; elements applied. But when the annotation object is applied from the
+                                               ;; database, the DOM is thus altered and we won't be able to scroll
+                                               ;; reliably to the annotation position.
+                                               ;; 
+                                               ;; based on limited testing I have encountered 2 cases:
+                                               ;; 1. a highlighted word within a <p></p> block. Saving cfi.at_current()
+                                               ;;    works. But then,
+                                               ;; 2. if an entire <p></p> block is highlighted, cfi.at_current()
+                                               ;;    subsequently fails due to the <p>... plain text ...</p> becoming
+                                               ;;    <p><span class="annotator-hl">... plain text ...</span></p> and the
+                                               ;;    original cfi no longer finding a match.
+                                               ;; 
+                                               ;; The naive solution was to replace e.g. "/2/4/2/140/1:2" with
+                                               ;; "/2/4/2/140/2/1:2", forcing all cfi's to assume an additional child,
+                                               ;; but this makes case #1 above fail when the highlight is somewhere
+                                               ;; inside the paragraph.
+                                               ;; 
+                                               ;; Instead, then, we're going to assume we can simply ask calibre to
+                                               ;; scroll to the parent element. I didn't read whether this conforms with
+                                               ;; the cfi spec's expectations, but it seems to work so far.
+                                               ;;
+
+                                               ;; or manipulate the last fragment if you wish...
+                                               pos: (|> (ifr-window.cfi.at_current)
+                                                        (.replace (new RegExp "([^/]+)$") ""))
+                                               spine: (get spine-map source-filepath)
+                                               
+                                               }
+                            
+                            }
+                  })
+       (when entry.note
+             (assign ann.note entry.note))
+
+       (set output entry.highlight ann)
+       
+       (entry.verification {content: verif-string
+                             score: coverage-score})
+
+       ;; check if the entry is in db
+       ;; FIXME: should really just cache all and compare against cache
+       (a-db.serialize (#>
+                        (a-db.each (a-sql.getAnnotationsWithMatchingRanges (first ann.ranges))
+                                   (lambda (err row)
+                                           ;; any match means the annotation probably exists already
+                                           (m.startComputation)
+                                           (entry.db-entry row)
+                                           (m.endComputation)))))
+       
+       (m.endComputation)
+       (console.log "DONE")
+       ))
+     )
+
+;; file browser
+(var m-file
+     {vm: (scoped
+           (var vm {})
+           (assign vm.init
+                   (#> (assign vm.file-list (m.prop []))))
+           vm)
+       view: (#(ctrl)
+               (m "div.table"
+                  (.map (m-file.vm.file-list)
+                        (#(fpath)
+                          (m "div.tr"
+                             [(m "div.td"
+                                 (m "a"
+                                    {onclick: (#>
+                                               (m.startComputation)
+                                               
+                                               (var full-path (path.join __dirname
+                                                                         ".."
+                                                                         "kindle-highlights"
+                                                                         fpath))
+                                               (m-fcontent.vm.file-path full-path)
+                                               (m-fcontent.vm.content
+                                                (fs.readFileSync full-path "utf-8"))
+
+                                               
+
+                                               (var yml (jsyaml.safeLoad (m-fcontent.vm.content))
+                                                    m-entry-list [])
+                                               (each entry (yml.highlight_list.sort
+                                                            (#(a b) (- a.startLocation b.startLocation)))
+                                                     (m-entry-list.push (new mEntry entry)))
+                                               (m-result.vm.title yml.title)
+                                               (m-result.vm.entry-list m-entry-list)
+                                               
+                                               (c-db.serialize
+                                                (#>
+                                                 (c-db.each
+                                                  (c-sql.getEpubPathInfoByTitle (+ "%" (m-result.vm.title) "%"))
+                                                  (lambda (err row)
+                                                          (console.log row)
+                                                          (var epub-filepath
+                                                               (path.join $CALIBRE-HOME
+                                                                          row.path
+                                                                          (+ row.name ".epub")))
+                                                          (assign epub
+                                                                  (new EPub epub-filepath
+                                                                       "imagewebroot_ignore"
+                                                                       "chapterwebroot_ignore"))
+
+                                                          (epub.on "end" (#> (process-epub epub)))
+                                                          (epub.parse)))
+                                                 
+                                                 ;; FIXME cleanup globals
+                                                 (assign yml.highlight_list
+                                                         (m-result.vm.entry-list))
+                                                 ))
+
+
+
+                                               
+                                               (m.endComputation)
+                                               )}
+                                    fpath))
+                               ])))))
+
+       })
+(m.mount (document.getElementById "file-panel")
+         {controller: m-file.vm.init view: m-file.view})
+
+(fs.readdir
+ (path.resolve
+  (path.join __dirname ".." "kindle-highlights"))
+ (#(err file-list)
+   (m.startComputation)
+   (var filtered-list []
+        re-yml (new RegExp "yml$"))
+   (each fpath file-list
+         (when (fpath.match re-yml)
+               (filtered-list.push fpath)))
+   (m-file.vm.file-list filtered-list)
+   (m.endComputation)
+   ))
+;; </file list setup>
+
+
+;; output to js
+(comment
+ (scoped
+  (var json-out-path "/tmp/out.json")
+  (fs.writeFile json-out-path
+                (JSON.stringify output null 2))))
+
