@@ -337,7 +337,6 @@
                 db-entry: (m.prop null)
                 }))
 
-;; <file list setup>
 ;; yml viewer
 (var m-fcontent
      {vm: (scoped
@@ -361,7 +360,6 @@
                                 "select a file")))
                    body)))
        })
-
 (m.mount (document.getElementById "file-content")
          {controller: m-fcontent.vm.init view: m-fcontent.view})
 

@@ -37,10 +37,6 @@
                  (arr-pres.push pres)))
      (console.log (+ "finished processing epub manifest, length: " arr-pres.length))
 
-     ;; probably redundant for this logic
-     ;; searchlogic.sib
-     ;; (load-all-publication-resource)
-
      (each (pres entry-index) arr-pres
            ;; (console.log (+ "proc arr pres... " entry-index " " pres.id ", " pres.href))
            ;; note we used to do
@@ -54,7 +50,6 @@
               (console.log "GOT FILE " pres.id)
               
               (set html-map pres.id (data.toString "utf8"))
-              ;; unused?
               (set spine-map pres.href (+ 1 entry-index))
 
               ;; run once, after all resources have been populated
@@ -67,12 +62,9 @@
                        (- (get-numeric a.href)
                           (get-numeric b.href))))
 
-                    ;; (build-candidate-mapping):
-                    ;; <searchlogic.sib>
                     (run-naive-search (m-result.vm.entry-list))
                     (run-tokenized-search (m-result.vm.entry-list))
-                    ;; </searchlogic.sib>
-
+                    
                     ;; remove?
                     (each entry (m-result.vm.entry-list)
                           (when (not (maybe-result entry))
@@ -387,6 +379,7 @@
 (m.mount (document.getElementById "file-panel")
          {controller: m-file.vm.init view: m-file.view})
 
+;; populate the file list
 (fs.readdir
  (path.resolve
   (path.join __dirname ".." "kindle-highlights"))
@@ -400,4 +393,4 @@
    (m-file.vm.file-list filtered-list)
    (m.endComputation)
    ))
-;; </file list setup>
+

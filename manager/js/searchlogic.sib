@@ -45,22 +45,6 @@
                         (return idx-rtn)))
             (incr idx-rtn)))
 
-;; load all "publication resource" into all-pres
-(def load-all-publication-resource ()
-     (var html-file-match (new RegExp "\\.htm.$"))
-     (each key (Object.keys epub.manifest)
-           (var pres (get epub.manifest key))
-           (if (pres.href.match html-file-match)
-               (arr-pres.push pres)))
-     (console.log (+ "finished processing epub manifest, length: " arr-pres.length))
-
-     ;; populate html map
-     (each (pres idx) arr-pres
-           (epub.getFile pres.id (lambda (err data mimetype)
-                                         (set html-map pres.id (data.toString "utf8"))
-                                         (console.log (+ "loaded: " pres.id))
-                                         ))))
-
 ;; naive search by exact string match
 (def run-naive-search (entry-list)
      ;; entry struct should correspond to mEntry
@@ -244,31 +228,3 @@
            )
 
      (console.log (+ "TOTAL: " total)))
-
-(var monster-timer)
-(def reconcile-all ()
-     (var interval-time 150)
-     (var entry-index 0)
-     (assign monster-timer
-             (setInterval
-              (#>
-               (console.log (+ "working on entry "
-                               (+ 1 entry-index) " of " yml.highlight_list.length))
-               (ternary (< entry-index yml.highlight_list.length)
-                        ;; there is active processing left
-                        (scoped
-                         (var entry (get yml.highlight_list entry-index))
-                         (var result (maybe-result entry))
-                         (when (and result
-                                    (not (get output entry.highlight)))
-                               (launch-and-find result.source entry interval-time))
-                         (incr entry-index))
-                        ;; check if no more active, then wrap up
-                        (when (= 0 n_active_search)
-                              (process.stdout.write "ALL DONE :D\n")
-                              (clearInterval monster-timer)
-                              (process.stdout.write (+ "wrote to " JSON_OUT_PATH "\n"))
-                              (fs.writeFile JSON_OUT_PATH (JSON.stringify output null 2))))
-
-               (console.log (+ entry-index ", OK!")))
-              interval-time)))
