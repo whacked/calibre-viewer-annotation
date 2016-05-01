@@ -1,3 +1,5 @@
+-- to be run against ebook-viewer-annotation.db
+
 -- name: getBooksWithTitleLike
 SELECT *
 FROM annotation
@@ -24,3 +26,10 @@ annotation AS ann,
 range AS rng
 WHERE ann.id = :annotation_id
 AND rng.annotation_id = ann.id;
+
+-- name: getAnnotationsWithMatchingRanges
+SELECT * FROM
+annotation AS a, range AS r
+WHERE r.annotation_id = a.id
+AND r.start = :start AND r.startOffset = :startOffset
+AND r.end = :end AND r.endOffset = :endOffset;
