@@ -58,12 +58,14 @@
                                          ))))
 
 ;; naive search by exact string match
-(def run-naive-search ()
+(def run-naive-search (entry-list)
+     ;; entry struct should correspond to mEntry
+     
      (scoped
       (var last-file-index 0)
       (var stat {found: 0})
       
-      (each (entry idx-entry) yml.highlight_list
+      (each (entry idx-entry) entry-list
 
             (var entry-id (make-entry-id entry))
             (var cur-result (or (get all-result entry-id) {}))
@@ -78,7 +80,7 @@
                       (comment
                        (console.log
                         (+ "searching for string in entry " (+ 1 idx-entry)
-                           " out of " yml.highlight_list.length
+                           " out of " entry-list.length
                            ", starting at " last-file-index)))
                       (var search-string (clean-string entry.highlight))
                       ;; (console.log search-string)
@@ -94,8 +96,8 @@
       (console.log (+ "TOTAL: " (get stat "found")))))
 
 ;; tokenize method
-(def run-tokenized-search ()
-     ;; (console.clear)
+(def run-tokenized-search (entry-list)
+     ;; entry struct should correspond to mEntry
 
      (var total 0)
      
@@ -106,7 +108,7 @@
      ;; to the latest match
      (var file-start-index 0)
      
-     (each entry yml.highlight_list
+     (each entry entry-list
            ;; skip already successful entries
            (when (maybe-result entry)
                  (incr total)
