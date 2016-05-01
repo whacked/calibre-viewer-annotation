@@ -1,9 +1,17 @@
 -- to be run against ebook-viewer-annotation.db
 
--- name: getBooksWithTitleLike
+-- name: getAnnotationsWithTitleLike
 SELECT *
 FROM annotation
 WHERE title LIKE :title;
+
+-- name: getFullAnnotationsWithTitleLike
+SELECT a.*
+, r.start, r.startOffset
+, r.end, r.endOffset
+FROM annotation AS a, range AS r
+WHERE r.annotation_id = a.id
+AND a.title LIKE :title;
 
 -- name: getAnnotationsWithQuoteLike
 SELECT *

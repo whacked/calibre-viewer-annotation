@@ -7,6 +7,17 @@
 ;;                          "xpath-range-bundle.js")
 ;;               (path.resolve))))
 
+;; cache for all annotations for a book given its title
+(var acache { data: {}
+              load-for-title (#(title)
+                               (when (not (get acache.data title))
+                                     (var collection [])
+                                     (set acache.data title collection)
+                                     (a-db.serialize
+                                      (#>
+                                       (a-db.each (a-sql.getFullAnnotationsWithTitleLike title)
+                                                  (#(err row)
+                                                    (collection.push row)))))))})
 ;; load epub
 (def process-epub (epub)
      (console.log "PROCESSING EPUB!")
@@ -278,15 +289,24 @@
                              annotation: ann})
 
        ;; check if the entry is in db
-       ;; FIXME: should really just cache all and compare against cache
-       (a-db.serialize (#>
-                        (a-db.each (a-sql.getAnnotationsWithMatchingRanges (first ann.ranges))
-                                   (lambda (err row)
-                                           ;; any match means the annotation probably exists already
-                                           (m.startComputation)
-                                           (entry.db-entry row)
-                                           (m.endComputation)))))
-       
+       ;; OLD: query each against DB (and this query doesn't check for title match!
+       ;; (a-db.serialize (#>
+       ;;                  (a-db.each (a-sql.getAnnotationsWithMatchingRanges (first ann.ranges))
+       ;;                             (lambda (err row)
+       ;;                                     ;; any match means the annotation probably exists already
+       ;;                                     (m.startComputation)
+       ;;                                     (entry.db-entry row)
+       ;;                                     (m.endComputation)))))
+       ;; NEW: use acache
+       ;; FIXME: speed this up
+       (var rng-match (first ann.ranges))
+       (each dbrow (get acache.data (m-result.vm.title))
+             (when (and (= dbrow.start rng-match.start)
+                        (= dbrow.startOffset rng-match.startOffset)
+                        (= dbrow.end rng-match.end)
+                        (= dbrow.endOffset rng-match.endOffset))
+                   (entry.db-entry dbrow)))
+
        (m.endComputation)
        (console.log "DONE")
        ))
@@ -326,6 +346,8 @@
                                                      (m-entry-list.push (new mEntry entry)))
                                                (m-result.vm.title yml.title)
                                                (m-result.vm.entry-list m-entry-list)
+                                               
+                                               (acache.load-for-title yml.title)
                                                
                                                (c-db.serialize
                                                 (#>
