@@ -355,6 +355,51 @@
          {controller: m-fcontent.vm.init view: m-fcontent.view})
 
 
+;; for reconcile all; note this is intended to clobber searchlogic.sib::reconcile-all()
+(var reconciler-interval 500
+     reconciler-timer null)
+(def reconcile-all ()
+     (var i 0
+          book-title (m-result.vm.title)
+          entry-list (m-result.vm.entry-list)
+          check-proc (#>
+                      (console.log i)
+                      (var entry (get entry-list i)
+                           verf (entry.verification)
+                           maybe-match null)
+                      ;; is it already in db?
+                      (when verf.annotation
+                            (assign maybe-match
+                                    (acache.find-match book-title (first verf.annotation.ranges))))
+                      (console.log "MAYBE?")
+                      (console.log maybe-match)
+                      (if maybe-match
+                          (do
+                           ;; already in db, skip!
+                           (console.log (concat "%calready in db, skipping:%c " entry.highlight)
+                                        "color:white;background:green;" "color:none;"))
+
+                          true
+                          (do
+                           (var entry-id (make-entry-id entry)
+                                result (get all-result entry-id))
+                           (when (and result
+                                      result.source)
+                                 (launch-and-find result.source entry))
+                           ))
+                      (incr i)
+                      (if (< i entry-list.length)
+                          (do
+                           (console.log (+ "running" (+ 1 i) " of " entry-list.length))
+                           (assign reconciler-timer
+                                   (setTimeout check-proc reconciler-interval)))
+
+                          true (m.endComputation))))
+     (m.startComputation)
+     (assign reconciler-timer
+             (setTimeout check-proc reconciler-interval)))
+
+
 (var m-result
      {hdr-list: ["check?" "info"
                   "highlight" "note" "verification"
@@ -370,16 +415,9 @@
                (var vm m-result.vm)
                (m "div"
                   [(m "button"
-                      {onclick: (#>
-                                 (console.log "reconcile-all() please"))}
+                      {onclick: (#> (reconcile-all))}
                       "RECONCILE ALL")
-                    ;; n_active_search may somehow not get decremented properly; attempt to force break out of the timer loop
                     (m "button"
-                       {onclick: (#>
-                                  (assign n_active_search 0)
-                                  (clearInterval monster-timer)
-                                  )}
-                       "attempt to terminate reconcilation")
                     (m "table"
                        (scoped
                         (var body [(m "tr" (.map m-result.hdr-list (#(k) (m "th" k))))])
