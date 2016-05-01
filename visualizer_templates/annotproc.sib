@@ -9,15 +9,30 @@
 
 ;; cache for all annotations for a book given its title
 (var acache { data: {}
-              load-for-title (#(title)
-                               (when (not (get acache.data title))
-                                     (var collection [])
-                                     (set acache.data title collection)
-                                     (a-db.serialize
-                                      (#>
-                                       (a-db.each (a-sql.getFullAnnotationsWithTitleLike title)
-                                                  (#(err row)
-                                                    (collection.push row)))))))})
+              load-for-title: (#(title)
+                                (when (not (get acache.data title))
+                                      (var collection [])
+                                      (set acache.data title collection)
+                                      (a-db.serialize
+                                       (#>
+                                        (a-db.each (a-sql.getFullAnnotationsWithTitleLike title)
+                                                   (#(err row)
+                                                     (collection.push row)))))))
+              find-match: (#(title rng-match)
+                            (var result null
+                                 search-list (get acache.data title)
+                                 i 0)
+                            (while (and search-list
+                                        (not result)
+                                        (< i search-list.length))
+                                   (var dbrow (get search-list i))
+                                   (when (and (= dbrow.start rng-match.start)
+                                              (= dbrow.startOffset rng-match.startOffset)
+                                              (= dbrow.end rng-match.end)
+                                              (= dbrow.endOffset rng-match.endOffset))
+                                         (assign result dbrow))
+                                   (incr i))
+                            result)})
 ;; load epub
 (def process-epub (epub)
      (console.log "PROCESSING EPUB!")
@@ -299,14 +314,11 @@
        ;;                                     (m.endComputation)))))
        ;; NEW: use acache
        ;; FIXME: speed this up
-       (var rng-match (first ann.ranges))
-       (each dbrow (get acache.data (m-result.vm.title))
-             (when (and (= dbrow.start rng-match.start)
-                        (= dbrow.startOffset rng-match.startOffset)
-                        (= dbrow.end rng-match.end)
-                        (= dbrow.endOffset rng-match.endOffset))
-                   (entry.db-entry dbrow)))
-
+       (var maybe-in-db (acache.find-match (m-result.vm.title)
+                                           (first ann.ranges)))
+       (when maybe-in-db
+             (entry.db-entry maybe-in-db))
+       
        (m.endComputation)
        (console.log "DONE")
        ))
