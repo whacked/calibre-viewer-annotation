@@ -26,12 +26,12 @@
  (fs.statSync $CDB-FILEPATH))
 
 ;; annotation resources
-(var a-db (new sqlite3.Database $ADB-FILEPATH)
-     a-sql (yesql "sql/main.sql"))
+(var a-db (new sqlite3.Database $ADB-FILEPATH))
+(var a-sql (yesql "sql/main.sql"))
 
 ;; calibre resources
-(var c-db (new sqlite3.Database $CDB-FILEPATH)
-     c-sql (yesql "sql/calibre.sql"))
+(var c-db (new sqlite3.Database $CDB-FILEPATH))
+(var c-sql (yesql "sql/calibre.sql"))
 
 (def cleanup ()
      (a-db.close)
