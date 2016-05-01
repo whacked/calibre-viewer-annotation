@@ -62,10 +62,10 @@ label {
 td {
     border: 1px solid gray;
 }
-td.yes-found {
+.yes-found {
     background-color: lime;
 }
-td.not-found {
+.not-found {
     background-color: maroon;
 }
 table {
