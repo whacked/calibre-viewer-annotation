@@ -38,3 +38,6 @@ venv
 .*.sw[op]
 nw-extractor/node_modules
 node_modules
+bower_components
+
+*.map
