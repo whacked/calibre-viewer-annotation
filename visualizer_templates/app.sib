@@ -296,7 +296,7 @@
      html-map {}
      spine-map {}
      re-whitespace (new RegExp "\\s+")
-     output {}
+     output {} ;; global result cache
 
      cfijs-path (path.join __dirname
                            ".."

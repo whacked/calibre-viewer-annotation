@@ -20,6 +20,10 @@
 ;; logic
 (var arr-pres []
      html-map {}
+     ;; TODO XXX not sure about spine_map yet --
+     ;; it's supposed to correspond to EbookViewer.iterator.spine.
+     ;; i'm guessing it has length of N extracted html pages + 1
+     ;; where +1 is index 0, or the cover. hence we ignore index 0
      spine-map {}
      all-result {})
 

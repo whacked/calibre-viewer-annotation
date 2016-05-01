@@ -27,6 +27,14 @@
      (parseFloat (replace-all s "\\D" "")))
 
 (def get-corpus-coverage (corpus token-list)
+     ;; a quick and dirty way to assess whether we should
+     ;; assume a match is found. corpus is assumed to be
+     ;; a fair bit longer than token_list. we want to see
+     ;; whether most of `token_list` exists in `corpus`.
+     ;; A better method would be to first extract all text
+     ;; in corpus, and minify it (remove extraneous spaces
+     ;; and symbols), then get something like levenshtein
+     ;; distance.
      (var hit-count 0
           offset 0)
      (each token token-list
