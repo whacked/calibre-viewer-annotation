@@ -146,6 +146,12 @@
    logic is in [[https://github.com/jbr/sibilant][Sibilant]] files in =manager/js/=; javascript can be generated via e.g.
    =for f in manager/js/*.sib; do sibilant $f -m -o manager/js; done=
    
+*** cfi.js used by manager
+
+    comes from [[https://github.com/kovidgoyal/calibre/blob/master/src/calibre/ebooks/oeb/display/cfi.coffee][cfi.coffee]]
+
+    compiled with with =coffee --compile cfi.coffee=
+
 * development
   
   The base plugin code is loosely taken from [[http://manual.calibre-ebook.com/creating_plugins.html#a-user-interface-plugin][user interface plugin]],
@@ -164,43 +170,6 @@
   and it should launch the viewer with the changes applied.
 
   for the electron live development using sibilant, also see [[https://github.com/skeeto/skewer-mode][Emacs skewer-mode]] and [[https://github.com/whacked/sibilant-skewer][sibilant-skewer]]
-
-** building source files
-
-*** build xpath-range =doMagic= function
-
-    copy paste from https://github.com/openannotation/xpath-range, BUT you want the range *returned*, so:
-
-    #+BEGIN_SRC javascript :eval never
-      Range = require("xpath-range").Range;
-      
-      doMagic = function() {
-        range    = getSelection().getRangeAt(0);
-        bRange = new Range.BrowserRange(range);
-        sRange = bRange.serialize(document.body);
-        console.log(sRange);
-        return sRange;
-      }
-      
-    #+END_SRC
-
-    save as =xpath-range.js= (we're now in =nw-extractor/node_modules/xpath-range=)
-
-    then run =browserify xpath-range.js -o xpath-range-bundle.js=
-
-*** compile =cfi.coffee= from calibre
-
-    =coffee --compile cfi.coffee=
-
-    this is what's inside =driver.js=
-
-*** =driver.js=
-
-    with current method, we're delegating html range finding to a spawned child window.
-    since we don't want to alter the dom, we use node-webkit's =inject-js-start= and =inject-js-end=
-    to send it the functions we want. so =driver.js= must contain all the range finder code.
-
-    then append =cfi.js= into =driver.js=
 
 ** data model
    
@@ -221,7 +190,7 @@
        "quote": "The text actually said this, since I quoted it.", // TEXT, the annotated text (added by frontend)
        "uri": "epub://part0036.html",             // TEXT, URI of annotated document (added by frontend)
 
-       "user": "yousir",
+       "user": "yousir",                          // TEXT, generally set to $HOME username or machine hostname
        
        // these are populated run-time by backref via the `range` table
        "ranges": [                                // list of ranges covered by annotation (usually only one entry)
