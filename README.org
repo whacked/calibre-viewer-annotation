@@ -92,6 +92,15 @@
      - epub
      - striptags
 
+***** sqlite3
+
+      this must be built for your platform to be used in node-webkit. For
+      linux this may work:
+
+      #+BEGIN_SRC sh :eval never
+      npm install sqlite3 --build-from-source --runtime=node-webkit --target_arch=x64 --target="0.19.3"
+      #+END_SRC
+
 **** how to use it
 
      basically check if the left column (external notes) matches the
@@ -289,6 +298,5 @@
   - either the js file inclusion or css style injection or both cause
     long pauses in the reader when navigating between epub chapter
     boundaries
-
 
   
