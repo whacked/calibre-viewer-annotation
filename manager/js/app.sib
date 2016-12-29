@@ -298,7 +298,7 @@
      re-whitespace (new RegExp "\\s+")
      output {} ;; global result cache
 
-     cfijs-path (path.join __dirname "js" "cfi.js")
+     cfijs-path (path.join global.__dirname "js" "cfi.js")
 
      ;; FIXME
      ;; globals used by searchlogic

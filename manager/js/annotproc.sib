@@ -332,7 +332,7 @@
                                     {onclick: (#>
                                                (m.startComputation)
                                                
-                                               (var full-path (path.join __dirname
+                                               (var full-path (path.join global.__dirname
                                                                          ".."
                                                                          "kindle-highlights"
                                                                          fpath))
@@ -389,7 +389,7 @@
 
 (fs.readdir
  (path.resolve
-  (path.join __dirname ".." "kindle-highlights"))
+  (path.join global.__dirname ".." "kindle-highlights"))
  (#(err file-list)
    (m.startComputation)
    (var filtered-list []
