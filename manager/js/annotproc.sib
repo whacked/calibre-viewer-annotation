@@ -333,7 +333,6 @@
                                                (m.startComputation)
                                                
                                                (var full-path (path.join global.__dirname
-                                                                         ".."
                                                                          "kindle-highlights"
                                                                          fpath))
                                                (m-fcontent.vm.file-path full-path)
@@ -376,7 +375,6 @@
                                                  ))
 
 
-
                                                
                                                (m.endComputation)
                                                )}
@@ -389,12 +387,12 @@
 
 (fs.readdir
  (path.resolve
-  (path.join global.__dirname ".." "kindle-highlights"))
+  (path.join global.__dirname "kindle-highlights"))
  (#(err file-list)
    (m.startComputation)
    (var filtered-list []
         re-yml (new RegExp "yml$"))
-   (each fpath file-list
+   (each fpath (or file-list [])
          (when (fpath.match re-yml)
                (filtered-list.push fpath)))
    (m-file.vm.file-list filtered-list)

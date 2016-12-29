@@ -3,7 +3,6 @@
      path      (require "path")
      sqlite3   (require "sqlite3") ;; https://github.com/mapbox/node-sqlite3
      yesql     (require "seduce") ;; https://github.com/bcarrell/seduce
-     m         (require "mithril")
      clipboard (require "clipboard")
      exec      (get (require "child_process") "exec")
      username  (require "username")
