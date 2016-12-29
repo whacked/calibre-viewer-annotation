@@ -307,18 +307,20 @@
      )
 
 (def save-output-to-file (filepath)
+     (var out (JSON.stringify output null 2))
      ;; if filepath is null, get it from dialog box
      (if filepath
          (do
           (console.log (+ "saving " (get (Object.keys output) 'length)
                           " items to " filepath))
-          (fs.writeFile filepath (JSON.stringify output null 2)))
+          (fs.writeFile filepath out))
          
          true
-         (dialog.showSaveDialog
-          (#(filepath)
-            (when filepath
-                  (save-output-to-file filepath))))))
+         (fdialogs.saveFile
+          out
+          ;; dialog.showSaveDialog
+          (#(err filepath)
+            (console.log "saved to " filepath)))))
 
 (var mEntry (#(data)
               {asin: data.asin
