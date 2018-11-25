@@ -14,55 +14,10 @@
                                                        .getTime))))
         (incr i)))
 
-;; model defs
-(var Range (lambda (data)
-                   (assign
-                    this.id          data.id
-                    this.start       data.start
-                    this.end         data.end
-                    this.startOffset data.startOffset
-                    this.endOffset   data.endOffset
-                    this.annotation  data.annotation)
-                   this)
-     Annotation (lambda (data)
-                        (assign this.id      data.id
-                                this.uri     data.uri
-                                this.title   data.title
-                                this.text    data.text
-                                this.quote   data.quote
-                                this.user    data.user
-                                this.extras  data.extras
-                                this.created data.created
-                                this.updated data.updated
-                                this._extras (JSON.parse data.extras)
-                                this._ranges null)
-                        (assign this.get-ranges
-                                (#> (when this._ranges
-                                          this._ranges)
-                                    (assign this._ranges
-                                            ["STUFF"]))
-                                this.get-extras
-                                (lambda (key)
-                                        (get this._extras key)))
-                        this))
-;; from calibre library `books` table
-(var Book
-     (lambda (data)
-             (assign this.id            data.id
-                     this.title         data.title
-                     this.sort          data.sort
-                     this.timestamp     data.timestamp
-                     this.pubdate       data.pubdate
-                     this.series_index  data.series_index
-                     this.author_sort   data.author_sort
-                     this.isbn          data.isbn
-                     this.lccn          data.lccn
-                     this.path          data.path
-                     this.flags         data.flags
-                     this.uuid          data.uuid
-                     this.has_cover     data.has_cover
-                     this.last_modified data.last_modified)
-             this))
+(const model (require "./js/model"))
+(const Annotation (get model "Annotation")
+       Book (get model "Book"))
+
 
 ;; annotation interaction
 (var mAnnot {view: (lambda (ctrl ann)
