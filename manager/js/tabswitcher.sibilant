@@ -1,0 +1,41 @@
+;; cheap tab switcher
+(var m-tab
+     {vm: (scoped
+           (var vm {panel-list []})
+           (assign vm.init
+                   (#>
+                    (var i 0
+                         el-list (document.getElementsByClassName "tab-panel"))
+                    (while (< i el-list.length)
+                           (var panel (get el-list i))
+                           (m-tab.vm.panel-list.push panel)
+                           (incr i))
+                    ))
+           vm)
+       view: (#(ctrl)
+               (m "ul"
+                  (scoped
+                   (var body [])
+                   (each panel m-tab.vm.panel-list
+                         (var panel-id (panel.getAttribute "id"))
+                         (body.push (m "li"
+                                       {onclick: (#(evt)
+                                                   (var i 0
+                                                        sw-list evt.target.parentNode.childNodes)
+                                                   (while (< i sw-list.length)
+                                                          (|> (get sw-list i)
+                                                              (.setAttribute "class" ""))
+                                                          (incr i))
+                                                   (evt.target.setAttribute "class" "active")
+                                                   (each p m-tab.vm.panel-list
+                                                         (p.setAttribute
+                                                          "class"
+                                                          (.concat "tab-panel"
+                                                                   (ternary (= panel-id (p.getAttribute "id"))
+                                                                            " active" "")))))}
+                                       panel-id))
+                         )
+                   body)))})
+(m.mount (document.getElementById "tab-switcher")
+         {controller: m-tab.vm.init
+          view: m-tab.view})
