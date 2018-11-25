@@ -1,3 +1,5 @@
+(include "./macro")
+
 ;; make sure init.sib has been run!
 ;; reload css
 (scoped
