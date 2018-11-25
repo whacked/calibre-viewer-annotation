@@ -27,8 +27,11 @@
      spine-map {}
      all-result {})
 
-(def make-result (index score source-file)
-     {index: index score: score source: source-file})
+(def make-result (index score source-file entry)
+     {index: index
+      score: score
+      source: source-file
+      entry: entry})
 
 (def maybe-result (entry)
      (get all-result (make-entry-id entry)))
@@ -46,32 +49,30 @@
             (incr idx-rtn)))
 
 ;; naive search by exact string match
-(def run-naive-search (entry-list)
+(def run-naive-search (entry-list known-result)
      ;; entry struct should correspond to KindleAnnotation
      
      (scoped
-      (var last-file-index 0)
-      (var stat {found: 0})
+      (var last-file-index 0
+           out (or known-result {})
+           stat {found: 0})
       
       (each (entry idx-entry) entry-list
 
             (var entry-id (make-entry-id entry))
-            (var cur-result (or (get all-result entry-id) {}))
+            (var cur-result (or (get out entry-id) {}))
 
             (ternary (get cur-result "score")
                      (scoped
-
                       (console.log "%cALREADY FOUND!!!"
-                                   "background:black;color:red;font-weight:bold;")
-                      )
+                                   "background:black;color:red;font-weight:bold;"))
                      (scoped
                       (comment
                        (console.log
                         (+ "searching for string in entry " (+ 1 idx-entry)
                            " out of " entry-list.length
                            ", starting at " last-file-index)))
-                      (var search-string (clean-string entry.highlight))
-                      ;; (console.log search-string)
+                      (var search-string (clean-string entry.quote))
                       (each (pres pres-offset) (arr-pres.slice last-file-index)
                             (var found-index
                                  (pipe (get html-map pres.id)
@@ -80,33 +81,41 @@
                                   (console.log (+ "FOUND IT at " found-index))
                                   (set stat "found" (+ 1 (get stat "found")))
                                   (assign last-file-index (+ last-file-index pres-offset))
-                                  (set all-result entry-id (make-result found-index 1.0 pres.href)))))))
-      (console.log (+ "TOTAL: " (get stat "found")))))
+                                  (set out entry-id
+                                       (make-result found-index
+                                                    1.0
+                                                    pres.href
+                                                    entry)))))))
+      (console.log (+ "TOTAL: " (get stat "found")))
+      out))
 
 ;; tokenize method
-(def run-tokenized-search (entry-list)
+(def run-tokenized-search (entry-list known-result)
      ;; entry struct should correspond to KindleAnnotation
-
-     (var total 0)
      
-     (var re-whitespace (new RegExp "\\s+"))
+     (var score-threshold 0.7)
 
-     ;; since both the file list and annotation list are sorted, in every
-     ;; annotation entry iteration we will exclude all files processed prior
-     ;; to the latest match
-     (var file-start-index 0)
+     (var re-whitespace (new RegExp "\\s+")
+          ;; since both the file list and annotation list are sorted, in every
+          ;; annotation entry iteration we will exclude all files processed prior
+          ;; to the latest match
+          file-start-index 0
+
+          out (or known-result {})
+          stat {found: 0})
      
      (each entry entry-list
-           ;; skip already successful entries
-           (when (maybe-result entry)
-                 (incr total)
-                 (return))
-
-           (var entry-id (make-entry-id entry))
-           (var search-string (clean-string entry.highlight))
+           (var entry-id (make-entry-id entry)
+                cur-result (or (get out entry-id) {}))
            
-           (var token-list (search-string.split re-whitespace))
-
+           ;; skip already successful entries
+           (when (get cur-result "score")
+                 (set stat "found" (+ (get stat "found") 1))
+                 (return))
+           
+           (var search-string (clean-string entry.quote)
+                token-list (search-string.split re-whitespace))
+           
            ;; old logic not ported
            ;; if(token_list.length < 4) {
            ;;     // direct match
@@ -115,41 +124,51 @@
            ;;     // a smarter version might do char-by-char.
            ;;     var loc = corpus.indexOf(search_string.replace(/^\W+/g, "").replace(/\W+$/g, ""))
            ;;     if(loc > -1) {
-           ;;         annot_map[entry.highlight] = make_result(loc, 1.0, pres.href);
+           ;;         annot_map[entry.quote] = make_result(loc, 1.0, pres.href);
            ;;         file_start_index = file_index;
            ;;         break;
            ;;     } else {
            ;;         // for debugging
            ;;     }
            ;; } else {
+           
+           (var check-length (* 2 search-string.length)
+                substring null
+                niter 0)
 
-           (var check-length (* 2 search-string.length))
-           (var safety 1000)
-           (var substring null)
-           (var niter 0)
-
-           (comment (console.log "SEARCHING FOR:" search-string))
+           (comment
+            (console.log (+ "%c*** SEARCHING FOR:%c " search-string)
+                         "background:black;color:white;font-weight:bold;"
+                         "background:none;color:brown;")
+            (console.log entry)
+            (console.log "starting from "
+                         file-start-index
+                         (get arr-pres file-start-index 'href)))
            
            (var break0 false
                 i file-start-index)
+           
            (while (and (< i arr-pres.length)
                        (not break0))
-                  (var file-index i)
-                  (var pres (get arr-pres file-index))
+                  
+                  (var file-index i
+                       pres (get arr-pres file-index)
+                       offset 0)
+                  
                   (incr i)
 
-                  (when (and (< 11 i) (< i 15))
-                        (console.log "..." file-index (get pres 'href)))
-                  
-                  (var offset 0)
-
-                  (var full-html (get html-map pres.id))
-                  (var full-text (pipe full-html
+                  (var full-html (get html-map pres.id)
+                       full-text (pipe full-html
                                        (striptags)
                                        (clean-string)
-                                       (replace-all "\\s+" " ")))
-                  (var match-idx (full-text.indexOf search-string))
-
+                                       (replace-all "\\s+" " "))
+                       ;; prevent infinite loop; this cap is inversely proportional to
+                       ;; the length of the lead token. If the lead token is e.g. "a",
+                       ;; then there will be many hits throughout the text.
+                       safety
+                       (/ (get full-text "length")
+                          (get (first token-list) "length")))
+                  
                   (var break1 false)
                   (while (and (< offset full-text.length)
                               (not break1))
@@ -181,8 +200,8 @@
                                (assign break1 true)
                                (return))
                          
-                         (var found-index (+ offset match-index))
-                         (var end-index (+ found-index check-length))
+                         (var found-index (+ offset match-index)
+                              end-index (+ found-index check-length))
 
                          ;; need to get tag-stripped text up to the desired length.
                          ;; we need this because it turns out the text matcher is failing because there is
@@ -211,20 +230,25 @@
                                    ;; (console.log "FOUND LAST")
 
                                    ;; at this point, the first token check is redundant, but who cares
-                                   (var hit-count (get-corpus-coverage substring token-list))
-                                   (var score (/ hit-count token-list.length))
-                                   (ternary (< 0.7 score)
+                                   (var hit-count (get-corpus-coverage substring token-list)
+                                        score (/ hit-count token-list.length))
+                                   
+                                   (ternary (< score-threshold score)
                                             (scoped
-                                             (console.log "%c   OK!   " "color:white;background:lime;")
-                                             (set all-result entry-id (make-result offset score pres.href))
+                                             (console.log (+ "%c   OK!   %c at "
+                                                             "(" file-index ") "
+                                                             pres.id)
+                                                          "color:white;background:lime;"
+                                                          "color:red;background:none;")
+                                             (set out entry-id
+                                                  (make-result
+                                                   offset score pres.href entry))
                                              (assign file-start-index file-index)
                                              (assign break0 true
                                                      break1 true)
                                              (return))
                                             (scoped
-                                             (assign offset (+ found-index lead-token.length))))
-                                   ))
-                         ))
-           )
-
-     (console.log (+ "TOTAL: " total)))
+                                             (assign offset (+ found-index lead-token.length)))))))))
+     
+     (console.log (+ "TOTAL: " (get stat "found")))
+     out)
