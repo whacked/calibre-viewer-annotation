@@ -58,12 +58,10 @@ class OkfnAnnotation1Def {
 
     user?: any;
 
-    extras?: any;
+    extras?: any; // (JSON.parse data.extras)
+    ranges?: any;
     created?: any;
     updated?: any;
-
-    _extras?: any; // (JSON.parse data.extras)
-    _ranges?: any; // null
 
     // https://www.w3.org/TR/annotation-model/
     body?: {
@@ -87,20 +85,20 @@ export class OkfnAnnotation1 extends OkfnAnnotation1Def {
             this.quote = data.highlightText;
         }
 
-        this._extras = this._extras || {};
-        this._ranges = this._ranges || [];
+        this.extras = this.extras || {};
+        this.ranges = this.ranges || [];
     }
 
     getRanges() {
-        if(!this._ranges) {
+        if(!this.ranges) {
             // ??? FIXME
-            this._ranges = ["STUFF"];
+            this.ranges = ["STUFF"];
         }
-        return this._ranges;
+        return this.ranges;
     }
 
     getExtras(key) {
-        return this._extras[key];
+        return this.extras[key];
     }
 }
 
@@ -176,7 +174,7 @@ export class KindleAnnotation {
                 extras[key] = this[key];
             }
         }
-        
+
         var out = new OkfnAnnotation1({
             user: this.customerId,
 
