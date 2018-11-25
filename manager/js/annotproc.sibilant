@@ -336,36 +336,39 @@
 
                                                (var yml (jsyaml.safeLoad (m-fcontent.vm.content))
                                                     m-entry-list [])
-                                               (each entry (yml.highlight_list.sort
-                                                            (#(a b) (- a.startLocation b.startLocation)))
-                                                     (m-entry-list.push (new mEntry entry)))
-                                               (m-result.vm.title yml.title)
-                                               (m-result.vm.entry-list m-entry-list)
                                                
-                                               (acache.load-for-title yml.title)
-                                               
-                                               (c-db.serialize
-                                                (#>
-                                                 (c-db.each
-                                                  (c-sql.getEpubPathInfoByTitle (+ "%" (m-result.vm.title) "%"))
-                                                  (lambda (err row)
-                                                          (console.log row)
-                                                          (var epub-filepath
-                                                               (path.join $CALIBRE-HOME
-                                                                          row.path
-                                                                          (+ row.name ".epub")))
-                                                          (assign epub
-                                                                  (new EPub epub-filepath
-                                                                       "imagewebroot_ignore"
-                                                                       "chapterwebroot_ignore"))
+                                               (when
+                                                yml
+                                                (each entry (yml.highlight_list.sort
+                                                             (#(a b) (- a.startLocation b.startLocation)))
+                                                      (m-entry-list.push (new mEntry entry)))
+                                                (m-result.vm.title yml.title)
+                                                (m-result.vm.entry-list m-entry-list)
+                                                
+                                                (acache.load-for-title yml.title)
+                                                
+                                                (c-db.serialize
+                                                 (#>
+                                                  (c-db.each
+                                                   (c-sql.getEpubPathInfoByTitle (+ "%" (m-result.vm.title) "%"))
+                                                   (lambda (err row)
+                                                           (console.log row)
+                                                           (var epub-filepath
+                                                                (path.join $CALIBRE-HOME
+                                                                           row.path
+                                                                           (+ row.name ".epub")))
+                                                           (assign epub
+                                                                   (new EPub epub-filepath
+                                                                        "imagewebroot_ignore"
+                                                                        "chapterwebroot_ignore"))
 
-                                                          (epub.on "end" (#> (process-epub epub)))
-                                                          (epub.parse)))
-                                                 
-                                                 ;; FIXME cleanup globals
-                                                 (assign yml.highlight_list
-                                                         (m-result.vm.entry-list))
-                                                 ))
+                                                           (epub.on "end" (#> (process-epub epub)))
+                                                           (epub.parse)))
+                                                  
+                                                  ;; FIXME cleanup globals
+                                                  (assign yml.highlight_list
+                                                          (m-result.vm.entry-list))
+                                                  )))
 
 
 

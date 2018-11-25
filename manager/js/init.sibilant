@@ -6,9 +6,10 @@
      m         (require "mithril")
      clipboard (require "clipboard")
      exec      (get (require "child_process") "exec")
-     username  (require "username")
      dialog    (|> (require "remote")
-                   (.require "dialog")))
+                   ;(.require "dialog"))
+     username  (require "username"))
+
 
 ;; write to browser
 ;; (console.log "HELLO")
