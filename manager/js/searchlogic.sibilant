@@ -47,7 +47,7 @@
 
 ;; naive search by exact string match
 (def run-naive-search (entry-list)
-     ;; entry struct should correspond to mEntry
+     ;; entry struct should correspond to KindleAnnotation
      
      (scoped
       (var last-file-index 0)
@@ -85,7 +85,7 @@
 
 ;; tokenize method
 (def run-tokenized-search (entry-list)
-     ;; entry struct should correspond to mEntry
+     ;; entry struct should correspond to KindleAnnotation
 
      (var total 0)
      

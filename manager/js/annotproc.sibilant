@@ -314,71 +314,80 @@
            (assign vm.init
                    (#> (assign vm.file-list (m.prop []))))
            vm)
-       view: (#(ctrl)
-               (m "div.table"
-                  (.map (m-file.vm.file-list)
-                        (#(fpath)
-                          (m "div.tr"
-                             [(m "div.td"
-                                 (m "a"
-                                    {onclick: (#>
-                                               (m.startComputation)
+      view: (#(ctrl)
+              (m "div.table"
+                 (.map (m-file.vm.file-list)
+                       (#(fpath)
+                         (m "div.tr"
+                            [(m "div.td"
+                                (m "a"
+                                   {onclick: (#>
+                                              (m.startComputation)
                                                
-                                               (var full-path (path.join __dirname
-                                                                         ".."
-                                                                         "kindle-highlights"
-                                                                         fpath))
-                                               (m-fcontent.vm.file-path full-path)
-                                               (m-fcontent.vm.content
-                                                (fs.readFileSync full-path "utf-8"))
+                                              (var full-path (path.join __dirname
+                                                                        ".."
+                                                                        "kindle-highlights"
+                                                                        fpath))
+                                              (m-fcontent.vm.file-path full-path)
+                                              (m-fcontent.vm.content
+                                               (fs.readFileSync full-path "utf-8"))
 
                                                
 
-                                               (var yml (jsyaml.safeLoad (m-fcontent.vm.content))
-                                                    m-entry-list [])
+                                              (var yml (jsyaml.safeLoad (m-fcontent.vm.content))
+                                                   m-entry-list [])
                                                
-                                               (when
-                                                yml
-                                                (each entry (yml.highlight_list.sort
-                                                             (#(a b) (- a.startLocation b.startLocation)))
-                                                      (m-entry-list.push (new mEntry entry)))
-                                                (m-result.vm.title yml.title)
-                                                (m-result.vm.entry-list m-entry-list)
+                                              (when yml
+                                                    (var highlight-list (or
+                                                                         ;; old output format, from `get_kindle_highlights.rb`
+                                                                         (get yml "highlight_list")
+                                                                         ;; new output format, from hyperbloviate-kindle-highlights
+                                                                         (get yml "highlights")))
+                                                    (each entry (highlight-list.sort
+                                                                 (#(a b) (- a.startLocation b.startLocation)))
+                                                          (var ka (new KindleAnnotation entry)
+                                                               ca (new CalibreAnnotation (.toAnnotation ka)))
+                                                          (assign ca.verification (m.prop {})
+                                                                  ca.db-entry (m.prop null))
+                                                          
+                                                          (m-entry-list.push ca))
+                                                    (m-result.vm.title yml.title)
+                                                    (m-result.vm.entry-list m-entry-list)
                                                 
-                                                (acache.load-for-title yml.title)
+                                                    (acache.load-for-title yml.title)
                                                 
-                                                (c-db.serialize
-                                                 (#>
-                                                  (c-db.each
-                                                   (c-sql.getEpubPathInfoByTitle (+ "%" (m-result.vm.title) "%"))
-                                                   (lambda (err row)
-                                                           (console.log row)
-                                                           (var epub-filepath
-                                                                (path.join $CALIBRE-HOME
-                                                                           row.path
-                                                                           (+ row.name ".epub")))
-                                                           (assign epub
-                                                                   (new EPub epub-filepath
-                                                                        "imagewebroot_ignore"
-                                                                        "chapterwebroot_ignore"))
+                                                    (c-db.serialize
+                                                     (#>
+                                                      (c-db.each
+                                                       (c-sql.getEpubPathInfoByTitle (+ "%" (m-result.vm.title) "%"))
+                                                       (lambda (err row)
+                                                               (console.log row)
+                                                               (var epub-filepath
+                                                                    (path.join $CALIBRE-HOME
+                                                                               row.path
+                                                                               (+ row.name ".epub")))
+                                                               (assign epub
+                                                                       (new EPub epub-filepath
+                                                                            "imagewebroot_ignore"
+                                                                            "chapterwebroot_ignore"))
 
-                                                           (epub.on "end" (#> (process-epub epub)))
-                                                           (epub.parse)))
+                                                               (epub.on "end" (#> (process-epub epub)))
+                                                               (epub.parse)))
                                                   
-                                                  ;; FIXME cleanup globals
-                                                  (assign yml.highlight_list
-                                                          (m-result.vm.entry-list))
-                                                  )))
+                                                      ;; FIXME cleanup globals
+                                                      (assign yml.highlight-list
+                                                              (m-result.vm.entry-list))
+                                                      )))
 
 
 
                                                
-                                               (m.endComputation)
-                                               )}
-                                    fpath))
-                               ])))))
+                                              (m.endComputation)
+                                              )}
+                                   fpath))
+                             ])))))
 
-       })
+      })
 (m.mount (document.getElementById "file-panel")
          {controller: m-file.vm.init view: m-file.view})
 
