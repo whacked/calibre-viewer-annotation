@@ -1,29 +1,29 @@
 ;; cache for all annotations for a book given its title
-(var acache { data: {}
-              load-for-title: (#(title)
-                                (when (not (get acache.data title))
-                                      (var collection [])
-                                      (set acache.data title collection)
-                                      (a-db.serialize
-                                       (#>
-                                        (a-db.each (a-sql.getFullAnnotationsWithTitleLike title)
-                                                   (#(err row)
-                                                     (collection.push row)))))))
-              find-match: (#(title rng-match)
-                            (var result null
-                                 search-list (get acache.data title)
-                                 i 0)
-                            (while (and search-list
-                                        (not result)
-                                        (< i search-list.length))
-                                   (var dbrow (get search-list i))
-                                   (when (and (= dbrow.start rng-match.start)
-                                              (= dbrow.startOffset rng-match.startOffset)
-                                              (= dbrow.end rng-match.end)
-                                              (= dbrow.endOffset rng-match.endOffset))
-                                         (assign result dbrow))
-                                   (incr i))
-                            result)})
+(var acache {data: {}
+             load-for-title: (#(title)
+                               (when (not (get acache.data title))
+                                     (var collection [])
+                                     (set acache.data title collection)
+                                     (a-db.serialize
+                                      (#>
+                                       (a-db.each (a-sql.getFullAnnotationsWithTitleLike title)
+                                                  (#(err row)
+                                                    (collection.push row)))))))
+             find-match: (#(title rng-match)
+                           (var result null
+                                search-list (get acache.data title)
+                                i 0)
+                           (while (and search-list
+                                       (not result)
+                                       (< i search-list.length))
+                                  (var dbrow (get search-list i))
+                                  (when (and (= dbrow.start rng-match.start)
+                                             (= dbrow.startOffset rng-match.startOffset)
+                                             (= dbrow.end rng-match.end)
+                                             (= dbrow.endOffset rng-match.endOffset))
+                                        (assign result dbrow))
+                                  (incr i))
+                           result)})
 ;; load epub
 (def find-annotations-in-epub (annotation-entry-list epub)
      (console.log "PROCESSING EPUB!")
@@ -97,7 +97,7 @@
      epub)
 
 (def launch-and-find (source-filepath entry)
-     ;; ;; for debugging
+     ;; for debugging
      (assign my-source-filepath source-filepath
              my-entry entry)
      (var source-filepath my-source-filepath
@@ -335,27 +335,35 @@
                                    {onclick: (#>
                                               (m.startComputation)
                                                
-                                              (var full-path (path.join __dirname
-                                                                        ".."
-                                                                        "kindle-highlights"
-                                                                        fpath))
+                                              (var full-path
+                                                   (path.join __dirname
+                                                              ".."
+                                                              "kindle-highlights"
+                                                              fpath))
                                               (m-fcontent.vm.file-path full-path)
                                               (m-fcontent.vm.content
                                                (fs.readFileSync full-path "utf-8"))
-
-                                               
-
+                                              
                                               (var yml (jsyaml.safeLoad (m-fcontent.vm.content))
                                                    m-entry-list [])
-                                               
+                                              
                                               (when yml
                                                     (var highlight-list (or
                                                                          ;; old output format, from `get_kindle_highlights.rb`
                                                                          (get yml "highlight_list")
                                                                          ;; new output format, from hyperbloviate-kindle-highlights
-                                                                         (get yml "highlights")))
+                                                                         (get yml "highlights"))
+                                                         get-comparable-location
+                                                         (#(entry)
+                                                           (var entry-extras (or entry.extras {}))
+                                                           (or entry.startLocation
+                                                               entry.pageNumber
+                                                               (get entry-extras "startLocation")
+                                                               (get entry-extras "pageNumber"))))
                                                     (each entry (highlight-list.sort
-                                                                 (#(a b) (- a.startLocation b.startLocation)))
+                                                                 (#(a b)
+                                                                   (- (get-comparable-location a)
+                                                                      (get-comparable-location b))))
                                                           (var ka (new KindleAnnotation entry)
                                                                ca (new CalibreAnnotation (.toOkfnAnnotation1 ka)))
                                                           (assign ca.verification (m.prop {})
@@ -377,28 +385,19 @@
                                                                     (path.join $CALIBRE-HOME
                                                                                row.path
                                                                                (+ row.name ".epub")))
-                                                               (assign epub
-                                                                       (new EPub epub-filepath
-                                                                            "imagewebroot_ignore"
-                                                                            "chapterwebroot_ignore"))
-
-                                                               (epub.on "end" (#> (process-epub epub)))
+                                                               (assign epub (load-epub epub-filepath))
+                                                               (epub.on "end" (#> (find-annotations-in-epub
+                                                                                   (m-result.vm.entry-list)
+                                                                                   epub)))
                                                                (epub.parse)))
                                                   
                                                       ;; FIXME cleanup globals
                                                       (assign yml.highlight-list
-                                                              (m-result.vm.entry-list))
-                                                      )))
-
-
-
+                                                              (m-result.vm.entry-list)))))
                                                
-                                              (m.endComputation)
-                                              )}
-                                   fpath))
-                             ])))))
+                                              (m.endComputation))}
+                                   fpath))])))))})
 
-      })
 (m.mount (document.getElementById "file-panel")
          {controller: m-file.vm.init view: m-file.view})
 
@@ -414,6 +413,6 @@
          (when (fpath.match re-yml)
                (filtered-list.push fpath)))
    (m-file.vm.file-list filtered-list)
-   (m.endComputation)
-   ))
+   (m.endComputation)))
+
 
