@@ -25,12 +25,15 @@
                                    (incr i))
                             result)})
 ;; load epub
-(def process-epub (epub)
+(def find-annotations-in-epub (annotation-entry-list epub)
      (console.log "PROCESSING EPUB!")
      
-     (var html-match (new RegExp "\\.htm.+$"))
+     (var html-match (new RegExp "\\.x?htm.+$"))
      (assign arr-pres []
-             html-map {})
+             html-map {}
+             match-output {}
+             failure-list [])
+     
      (each key (Object.keys epub.manifest)
            (var pres (get epub.manifest key))
            (when (pres.href.match html-match)
@@ -57,33 +60,41 @@
                        arr-pres.length)
                     (console.log "OK, READY.")
                     (m.startComputation)
+                    
                     (arr-pres.sort
                      (#(a b)
                        (- (get-numeric a.href)
                           (get-numeric b.href))))
-
-                    (run-naive-search (m-result.vm.entry-list))
-                    (run-tokenized-search (m-result.vm.entry-list))
                     
-                    ;; remove?
-                    (each entry (m-result.vm.entry-list)
-                          (when (not (maybe-result entry))
+                    (assign match-output
+                            (run-naive-search annotation-entry-list match-output))
+                    (assign match-output
+                            (run-tokenized-search annotation-entry-list match-output))
+                    
+                    (each entry annotation-entry-list
+                          (when (not (get match-output
+                                          (make-entry-id entry)))
                                 (failure-list.push entry.highlight)))
                     
                     (console.log
-                     (+ (get (Object.keys all-result) 'length)
+                     (+ (get (Object.keys match-output) 'length)
                         " found, "
                         failure-list.length
                         " failures ("
-                        (get (m-result.vm.entry-list) 'length)
+                        (get annotation-entry-list 'length)
                         " total)"))
 
                     ;; results display
                     ;; see m-result
+                    (m.endComputation))))))
 
-                    (m.endComputation)
-
-                    )))))
+(def load-epub (epub-filepath)
+     (console.warn "LOADING:" epub-filepath)
+     (new EPub epub-filepath
+          "imagewebroot_ignore"
+          "chapterwebroot_ignore")
+     ;; (epub.parse)
+     epub)
 
 (def launch-and-find (source-filepath entry)
      ;; ;; for debugging
