@@ -346,7 +346,7 @@
                                                     (each entry (highlight-list.sort
                                                                  (#(a b) (- a.startLocation b.startLocation)))
                                                           (var ka (new KindleAnnotation entry)
-                                                               ca (new CalibreAnnotation (.toAnnotation ka)))
+                                                               ca (new CalibreAnnotation (.toOkfnAnnotation1 ka)))
                                                           (assign ca.verification (m.prop {})
                                                                   ca.db-entry (m.prop null))
                                                           

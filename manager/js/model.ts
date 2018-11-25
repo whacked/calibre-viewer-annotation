@@ -1,4 +1,5 @@
-import { setFlagsFromString } from "v8";
+// TODO: migrate to openannotation format
+// see https://github.com/hypothesis/h/blob/master/h/schemas/annotation.py
 
 class RangeDef {
     id: any;
@@ -44,7 +45,7 @@ class WebAnnotationDataModel {
 }
 
 // https://github.com/openannotation/annotator
-class AnnotationDef {
+class OkfnAnnotation1Def {
     id?: any;
     uri?: any;
     title?: any;
@@ -70,10 +71,10 @@ class AnnotationDef {
     }
 }
 
-export interface IAnnotation extends AnnotationDef {}
+export interface IOkfnAnnotation1 extends OkfnAnnotation1Def {}
 
-export class Annotation extends AnnotationDef {
-    constructor(data: IAnnotation) {
+export class OkfnAnnotation1 extends OkfnAnnotation1Def {
+    constructor(data: IOkfnAnnotation1) {
         super();
         for (const key of Object.keys(data)) {
             this[key] = data[key];
@@ -162,8 +163,21 @@ export class KindleAnnotation {
         this.highlightColor = data.highlightColor;
     }
 
-    toAnnotation(): Annotation {
-        var out = new Annotation({
+    toOkfnAnnotation1(): OkfnAnnotation1 {
+        var extras = {};
+        for(const key of [
+            "pageNumber",
+            "startLocation",
+            "endLocation",
+            "howLongAgo",
+            "highlightColor",
+        ]) {
+            if(this[key]) {
+                extras[key] = this[key];
+            }
+        }
+        
+        var out = new OkfnAnnotation1({
             user: this.customerId,
 
             text: this.note,
@@ -171,12 +185,14 @@ export class KindleAnnotation {
             
             created: this.timestamp,
             updated: this.timestamp,
+
+            extras: extras,
         });
         return out
     }
 }
 
-export class CalibreAnnotation extends Annotation {
+export class CalibreAnnotation extends OkfnAnnotation1 {
     verification: any;
     dbEntry: any;
      

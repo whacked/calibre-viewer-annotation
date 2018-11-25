@@ -16,7 +16,7 @@
 
 (console.log "import model")
 (const model (require "./js/model"))
-(const Annotation (get model "Annotation")
+(const OkfnAnnotation1 (get model "OkfnAnnotation1")
        Book (get model "Book")
        KindleAnnotation (get model "KindleAnnotation")
        CalibreAnnotation (get model "CalibreAnnotation"))
@@ -92,7 +92,7 @@
              (a-db.each (a-sql.getAnnotationsWithTitleLike {title: (+ "%" book.title "%")})
                         (lambda (err row)
                                 ;; (console.log row.id)
-                                (ann-list.push (new Annotation row)))
+                                (ann-list.push (new OkfnAnnotation1 row)))
                         (#>
                          (console.log ann-list.length)
                          (m-ann.vm.list ann-list)
@@ -343,6 +343,7 @@
                        (var body [(m "tr" (.map m-result.hdr-list (#(k) (m "th" k))))])
                        (each entry (vm.entry-list)
                              (var entry-id (make-entry-id entry)
+                                  entry-extras (get entry "extras")
                                   result (or (get all-result entry-id) {}))
                              (body.push
                               (m "tr"
@@ -377,14 +378,31 @@
                                                                result.source)))
                                                         (m "div" {class: "not-found"}))
                                                (m "div"
-                                                  (if (not (and entry.startLocation
-                                                                entry.endLocation))
-                                                      ""
-                                                      (+ ""
-                                                         entry.startLocation "~"
-                                                         entry.endLocation " ("
-                                                         (- entry.endLocation entry.startLocation)
-                                                         ")")))
+                                                  (scoped
+                                                   (var maybe-start-location
+                                                        (or entry.startLocation
+                                                            (get entry-extras "startLocation"))
+                                                        maybe-end-location
+                                                        (or entry.endLocation
+                                                            (get entry-extras "endLocation"))
+                                                        maybe-page-number
+                                                        (or entry.pageNumber
+                                                            (get entry-extras "pageNumber")))
+                                                   (+ (if (and maybe-start-location
+                                                               maybe-end-location)
+                                                          (+ ""
+                                                             maybe-start-location "~"
+                                                             maybe-end-location " ("
+                                                             (- maybe-end-location
+                                                                maybe-start-location)
+                                                             ")")
+
+                                                          "")
+                                                      
+                                                      (if maybe-page-number
+                                                          (+ "page " maybe-page-number)
+                                                          ""))))
+                                               
                                                (m "div"
                                                   (if (not entry.timestamp)
                                                       ""
