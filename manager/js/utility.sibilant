@@ -1,4 +1,7 @@
+(include "./macro")
 (console.log "utility included.")
+
+(const object-hash (require "object-hash"))
 
 ;; utility
 (def score2rgb (score)
@@ -15,7 +18,7 @@
      (+ "rgb(" (Math.floor r) "," (Math.floor g) "," b ")"))
 
 (def make-entry-id (entry)
-     (+ entry.startLocation "-" entry.endLocation))
+     (object-hash entry))
 
 (def clean-string (s)
      (entities.decode
