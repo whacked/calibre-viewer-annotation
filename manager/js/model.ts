@@ -133,16 +133,20 @@ export class Book extends BookDef {
     }
 }
 
+type KindleHighlightColor = "Yellow" | "Blue" | "Red" | "Orange";
+
 export class KindleAnnotation {
     asin: any;
     customerId: any;
     embeddedId: any;
-    endLocation: any;
-    highlight: any;
+    timestamp?: any;
     howLongAgo: any;
-    startLocation: any;
-    timestamp: any;
+    startLocation?: number;
+    endLocation?: any;
+    pageNumber?: number;
     note: any;
+    highlight: any;
+    highlightColor?: KindleHighlightColor;
 
     constructor(data: any) {
         this.asin = data.asin;
@@ -152,8 +156,10 @@ export class KindleAnnotation {
         this.highlight = data.highlight || data.highlightText;
         this.howLongAgo = data.howLongAgo;
         this.startLocation = data.startLocation;
+        this.pageNumber = data.pageNumber;
         this.timestamp = data.timestamp;
         this.note = data.note || data.noteText;
+        this.highlightColor = data.highlightColor;
     }
 
     toAnnotation(): Annotation {
@@ -173,7 +179,7 @@ export class KindleAnnotation {
 export class CalibreAnnotation extends Annotation {
     verification: any;
     dbEntry: any;
-    
+     
     constructor(data: any) {
         super(data);
         
