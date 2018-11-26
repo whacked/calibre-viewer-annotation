@@ -1,13 +1,29 @@
 import * as path from "path";
-import * as sqlite3 from "sqlite3";
 import * as yesql from "seduce";
 import * as fs from "fs";
 import { exec } from "child_process";
+let sqlite3;
+try {
+    sqlite3 = require("sqlite3");
+} catch(e) {
+    console.error("sqlite3 NOT AVAILABLE");
+    console.warn(e);
+    // create a dummy object
+    class DummyDatabase {
+        each(..._) {
+            console.error("sqlite3 not available");
+        }
+    }
+    sqlite3 = { Database: DummyDatabase };
+}
 
 const $HOME = process.env[(process.platform === "win32") ? "USERPROFILE" : "HOME"];
 const $CALIBRE_HOME = path.join($HOME, "Calibre Library");
 const $CDB_FILEPATH = path.join($CALIBRE_HOME, "metadata.db");
-const $CALIBRE_SQL_FILEPATH = "../../sql/calibre.sql";
+const $CALIBRE_SQL_FILEPATH = path.join(
+    __dirname, "../../sql",
+    "calibre.sql",
+);
 
 type Timestamp = string;
 
@@ -103,7 +119,6 @@ export namespace CalibreManager {
             loadDatabase();
         }
         let sql = calibreSql.getEpubPathInfoById(bookId);
-        console.log(sql);
         database.each(sql, (function(err, row) {
             if(err) {
                 console.warn(err)
