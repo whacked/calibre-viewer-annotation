@@ -101,18 +101,18 @@ export class CalibreBook {
  */
 export namespace CalibreManager {
     var databaseFilepath: string = $CDB_FILEPATH;
-    var database;
+    export var Database;
     const calibreSql = yesql($CALIBRE_SQL_FILEPATH);
 
     export function loadDatabase(filepath: string = null) {
         if (filepath) {
             databaseFilepath = filepath;
         }
-        database = new sqlite3.Database(databaseFilepath);
+        Database = new sqlite3.Database(databaseFilepath);
     }
 
     export function listAllBooks(callback: Function = null) {
-        if (!database) {
+        if (!Database) {
             loadDatabase();
         }
 
@@ -122,7 +122,7 @@ export namespace CalibreManager {
         var expectedCount = 0;
 
         var runRetrieve = function () {
-            database.each(sqlBooks, (function (err, row) {
+            Database.each(sqlBooks, (function (err, row) {
                 if (err) {
                     console.warn(err);
                     return;
@@ -137,12 +137,12 @@ export namespace CalibreManager {
             }));
         };
 
-        database.serialize(
+        Database.serialize(
             function () {
-                database.get(
+                Database.get(
                     sqlCount, function (err, result) {
                         expectedCount = result.count;
-                        database.serialize(runRetrieve);
+                        Database.serialize(runRetrieve);
                     }
                 )
             }
@@ -162,11 +162,11 @@ export namespace CalibreManager {
     }
 
     export function openEpubByBookId(bookId: number) {
-        if (!database) {
+        if (!Database) {
             loadDatabase();
         }
         let sql = calibreSql.getEpubPathInfoById(bookId);
-        database.each(sql, (function (err, row) {
+        Database.each(sql, (function (err, row) {
             if (err) {
                 console.warn(err)
                 return;
@@ -180,11 +180,11 @@ export namespace CalibreManager {
     }
 
     export function getBookByTitle(title: string, callback: Function = null) {
-        if (!database) {
+        if (!Database) {
             loadDatabase();
         }
         let sql = calibreSql.getEpubPathInfoByTitle(`%${title}%`);
-        database.get(
+        Database.get(
             sql,
             function (err, row) {
                 let calibreBook = new CalibreBook({
