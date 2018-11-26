@@ -111,41 +111,24 @@ export namespace CalibreManager {
         Database = new sqlite3.Database(databaseFilepath);
     }
 
-    export function loadAllBooks(callback: Function = null) {
+    export function loadAllBooks(onComplete: Function) {
         if (!Database) {
             loadDatabase();
         }
 
-        let sqlCount = calibreSql.getTotalEpubBooks();
-        let sqlBooks = calibreSql.getAllEpubBooks();
         var bookList = [];
-        var expectedCount = 0;
+        let sqlBooks = calibreSql.getAllEpubBooks();
 
-        var runRetrieve = function () {
-            Database.each(sqlBooks, (function (err, row) {
+        Database.each(
+            sqlBooks,
+            function (err, row) {
                 if (err) {
                     console.warn(err);
                     return;
                 }
                 bookList.push(new CalibreBook(row));
-
-                if (bookList.length >= expectedCount) {
-                    if (callback) {
-                        callback(bookList);
-                    }
-                }
-            }));
-        };
-
-        Database.serialize(
-            function () {
-                Database.get(
-                    sqlCount, function (err, result) {
-                        expectedCount = result.count;
-                        Database.serialize(runRetrieve);
-                    }
-                )
-            }
+            },
+            onComplete,
         );
     }
 
@@ -179,7 +162,7 @@ export namespace CalibreManager {
         }));
     }
 
-    export function getBookByTitle(title: string, callback: Function = null) {
+    export function getBookByTitle(title: string, onComplete: Function = null) {
         if (!Database) {
             loadDatabase();
         }
@@ -191,8 +174,8 @@ export namespace CalibreManager {
                     path: row.path,
                     data: { name: row.name },
                 });
-                if (callback) {
-                    callback(calibreBook);
+                if (onComplete) {
+                    onComplete(calibreBook);
                 }
             }
         )
