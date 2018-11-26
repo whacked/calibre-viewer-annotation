@@ -89,4 +89,51 @@ export namespace AnnotationManager {
             onComplete,
         );
     }
+
+    export function addAnnotation(newAnnotation: IOkfnAnnotation1, onComplete: Function) {
+        Database.serialize(function() {
+            Database.run(
+                // FIXME: this is manually building a prepared statement
+                annotationSql.insertAnnotation().replace(/null/g, "?"),
+                [
+                    newAnnotation.created,
+                    newAnnotation.updated,
+                    newAnnotation.title,
+                    newAnnotation.text,
+                    newAnnotation.quote,
+                    JSON.stringify(newAnnotation.extras),
+                    newAnnotation.uri,
+                    newAnnotation.user,
+                ],
+            );
+            
+            Database.serialize(
+                function() {
+                    let lastInserted = annotationSql.getLastInsertedId();
+                    Database.get(lastInserted, function(err, row) {
+                        console.log("INSERTED: ", row.id);
+                        newAnnotation.id = row.id;
+                        onComplete(newAnnotation);
+                    });
+                }
+            )
+        });
+    }
+
+    export function addRangeToAnnotation(
+        annotation: OkfnAnnotation1,
+        annotationRange,
+        onComplete: Function
+    ) {
+        let sql = annotationSql.appendRangeToAnnotation({
+            start: annotationRange.start,
+            end: annotationRange.end,
+            startOffset: annotationRange.startOffset,
+            endOffset: annotationRange.endOffset,
+            annotation_id: annotation.id,
+        });
+        Database.run(sql, (function(err, row) {
+            onComplete(row);
+        }));
+    }
 }
