@@ -5,3 +5,10 @@
 		      destructure
 		      (map (#(pair) [(first pair) " = " (second pair)]))
 		      (interleave ",\n    ")) ]))
+
+(macro with-return-var (rtn init ...body)
+       (^*scoped-without-return
+        `(do
+          (var @rtn @init)
+          ...@body
+          @rtn)))

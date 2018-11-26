@@ -33,9 +33,6 @@
       source: source-file
       entry: entry})
 
-(def maybe-result (entry)
-     (get all-result (make-entry-id entry)))
-
 ;; given a file name, find the index within arr-pres
 (def get-file-index (fname)
      (var idx-rtn 0)

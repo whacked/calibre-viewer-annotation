@@ -1,4 +1,6 @@
 (include "./macro")
+(const dialog (get (require "electron")
+                   "remote" "dialog"))
 
 ;; make sure init.sib has been run!
 ;; reload css
@@ -164,6 +166,8 @@
 ;; (clipboard.writeText "TSET!!")
 
 (include "./tabswitcher")
+(setup-tab-switcher!
+ (document.getElementById "tab-switcher"))
 
 
 
@@ -178,21 +182,13 @@
                        (new Entities))
      Range (get (require "xpath-range") 'Range))
 
-
-
-
-
-
-
 (var epub null
      yml null
      
-     failure-list []
      arr-pres []
      html-map {}
      spine-map {}
      re-whitespace (new RegExp "\\s+")
-     output {} ;; global result cache
 
      cfijs-path (path.join __dirname "js" "cfi.js")
 
@@ -202,7 +198,7 @@
      
      )
 
-(def save-output-to-file (filepath)
+(def save-output-to-file (output filepath)
      ;; if filepath is null, get it from dialog box
      (if filepath
          (do
@@ -214,7 +210,7 @@
          (dialog.showSaveDialog
           (#(filepath)
             (when filepath
-                  (save-output-to-file filepath))))))
+                  (save-output-to-file output filepath))))))
 
 ;; yml viewer
 (var m-fcontent
@@ -310,7 +306,7 @@
                      {onclick: (#> (clearInterval reconciler-timer))}
                      "terminate reconcilation process")
                   (m "button"
-                     {onclick: (#> (save-output-to-file))}
+                     {onclick: (#> (save-output-to-file output null))}
                      "save output to file")
                     
                   (m
