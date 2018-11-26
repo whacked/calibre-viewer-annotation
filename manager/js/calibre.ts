@@ -111,7 +111,7 @@ export namespace CalibreManager {
         Database = new sqlite3.Database(databaseFilepath);
     }
 
-    export function listAllBooks(callback: Function = null) {
+    export function loadAllBooks(callback: Function = null) {
         if (!Database) {
             loadDatabase();
         }

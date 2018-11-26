@@ -157,7 +157,7 @@
 
 ;; load books
 (def load-book-list ()
-     (calibre.CalibreManager.listAllBooks
+     (calibre.CalibreManager.loadAllBooks
       (#(books)
         (m.startComputation)
         (m-bk.vm.list book-list)
