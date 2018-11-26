@@ -22,15 +22,15 @@ export class Range extends RangeDef {
 }
 
 // https://www.w3.org/TR/annotation-model/
-type Uri = String;
-type MimeType = String;
-type Language = String;
+type Uri = string;
+type MimeType = string;
+type Language = string;
 
 class WebAnnotationBody {
     id: any;
     format: MimeType;
     language: Language;
-    value?: String;
+    value?: string;
 }
 
 class Relationship {
@@ -39,7 +39,7 @@ class Relationship {
 
 class WebAnnotationDataModel {
     id: any; // FIXME
-    type: String;
+    type: string;
     body: WebAnnotationBody;
     target: Relationship;
 }
@@ -50,11 +50,11 @@ class OkfnAnnotation1Def {
     uri?: any;
     title?: any;
 
-    text?: String;
-    noteText?: String; // kindle
+    text?: string;
+    noteText?: string; // kindle
 
-    quote?: String;
-    highlightText?: String; // kindle
+    quote?: string;
+    highlightText?: string; // kindle
 
     user?: any;
 
