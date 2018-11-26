@@ -2,6 +2,10 @@
 (console.log "utility included.")
 
 (const object-hash (require "object-hash"))
+(const entities  (scoped (var Entities (get (require "html-entities") "AllHtmlEntities"))
+                         (new Entities)))
+
+(const re-whitespace (new RegExp "\\s+"))
 
 ;; utility
 (def score2rgb (score)

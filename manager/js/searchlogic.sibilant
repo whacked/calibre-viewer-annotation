@@ -1,3 +1,6 @@
+(include "./macro")
+(const striptags (require "striptags"))
+
 ;; debugging
 ;; (console.clear)
 ;; == interactive ==
@@ -8,6 +11,7 @@
      (when (< 0 DEBUG-LEVEL)
            (console-log-orig.apply console argv)))
 (assign console.log dlog)
+
 
 ;; == compiled ==
 ;; skip console.log output in compilation.
@@ -24,7 +28,6 @@
      ;; it's supposed to correspond to EbookViewer.iterator.spine.
      ;; i'm guessing it has length of N extracted html pages + 1
      ;; where +1 is index 0, or the cover. hence we ignore index 0
-     spine-map {}
      all-result {})
 
 (def make-result (index score source-file entry)
@@ -92,8 +95,7 @@
      
      (var score-threshold 0.7)
 
-     (var re-whitespace (new RegExp "\\s+")
-          ;; since both the file list and annotation list are sorted, in every
+     (var ;; since both the file list and annotation list are sorted, in every
           ;; annotation entry iteration we will exclude all files processed prior
           ;; to the latest match
           file-start-index 0

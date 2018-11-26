@@ -1,3 +1,8 @@
+(include "./macro")
+(const jsyaml (require "js-yaml")
+       Range (get (require "xpath-range")
+                  'Range))
+
 ;; cache for all annotations for a book given its title
 (var acache {data: {}
              load-for-title: (#(title)
@@ -26,6 +31,10 @@
                                         (assign result dbrow))
                                   (incr i))
                            result)})
+
+;; FIXME: global
+(var spine-map {})
+
 ;; load epub
 (def find-annotations-in-epub (annotation-entry-list epub)
      (console.log "PROCESSING EPUB!")

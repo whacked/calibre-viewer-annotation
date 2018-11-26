@@ -173,29 +173,9 @@
 (load-book-list)
 
 
-
-(var EPub      (require "epub")
-     striptags (require "striptags")
-     jsyaml    (require "js-yaml")
-     entities  (scoped (var Entities (get (require "html-entities") "AllHtmlEntities"))
-                       (new Entities))
-     Range (get (require "xpath-range") 'Range))
-
-(var epub null
-     yml null
-     
-     arr-pres []
+(var arr-pres []
      html-map {}
-     spine-map {}
-     re-whitespace (new RegExp "\\s+")
-
-     cfijs-path (path.join __dirname "js" "cfi.js")
-
-     ;; FIXME
-     ;; globals used by searchlogic
-     yml {highlight_list: []}
-     
-     )
+     cfijs-path (path.join __dirname "js" "cfi.js"))
 
 (def save-output-to-file (output filepath)
      ;; if filepath is null, get it from dialog box
