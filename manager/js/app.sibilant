@@ -48,7 +48,7 @@
                                        [(m "h3" [book.title
                                                   " "
                                                   (m "button[type=button]"
-                                                     {onclick: (#> (find-and-open-epub-by-id book.id))}
+                                                     {onclick: (#> (calibre.CalibreManager.openEpubByBookId book.id))}
                                                      "open")
                                                   ])
                                          (m "div"
@@ -98,22 +98,6 @@
                          (m-ann.vm.list ann-list)
                          ;; trigger rerender
                          (m.endComputation)))))))
-
-
-(def find-and-open-epub-by-id (book-id)
-     (c-db.serialize
-      (#>
-       (c-db.each (c-sql.getEpubPathInfoById book-id)
-                  (lambda (err row)
-                          ;; (console.log "loading " row.id)
-                          (var epub-filepath (path.join $CALIBRE-HOME
-                                                        row.path
-                                                        (+ row.name ".epub")))
-                          (console.log
-                           (+ "opening: " epub-filepath "..."))
-                          (try
-                           (scoped (fs.statSync epub-filepath)
-                                   (exec (+ "ebook-viewer '" epub-filepath "'")))))))))
 
 ;; book interaction
 (var mBook {view: (lambda (ctrl book)
@@ -171,18 +155,11 @@
 
 ;; load books
 (def load-book-list ()
-     (c-db.serialize
-      (#>
-       (console.log "loading books...")
-       (m.startComputation)
-       (var book-list [])
-       (c-db.each (c-sql.getAllEpubBooks)
-                  (lambda (err row)
-                          ;; (console.log "loading " row.id)
-                          (book-list.push (new Book row)))
-                  (#>
-                   (m-bk.vm.list book-list)
-                   (m.endComputation))))))
+     (calibre.CalibreManager.listAllBooks
+      (#(books)
+        (m.startComputation)
+        (m-bk.vm.list book-list)
+        (m.endComputation))))
 
 ;; (clipboard.writeText "TSET!!")
 

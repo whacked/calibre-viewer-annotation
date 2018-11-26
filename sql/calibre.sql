@@ -6,6 +6,11 @@ FROM books AS b, data AS d
 WHERE b.id = d.book AND d.format = 'EPUB'
 ORDER BY id DESC;
 
+-- name: getTotalEpubBooks
+SELECT COUNT(*) AS count
+FROM books AS b, data AS d
+WHERE b.id = d.book AND d.format = 'EPUB';
+
 -- name: getEpubPathInfoById
 SELECT b.path, d.name
 FROM books AS b, data AS d

@@ -1,3 +1,5 @@
+(include "./macro")
+
 ;; imports
 (var fs        (require "fs")
      path      (require "path")
@@ -10,11 +12,7 @@
                    ;(.require "dialog"))
      username  (require "username"))
 
-
-;; write to browser
-;; (console.log "HELLO")
-;; write to console
-;; (process.stdout.write "HI\n")
+(const calibre (require "./js/calibre"))
 
 (var $ADB-FILENAME "ebook-viewer-annotation.db"
      $HOME (get process.env (ternary (= process.platform "win32")
@@ -34,13 +32,9 @@
 (var a-db (new sqlite3.Database $ADB-FILEPATH))
 (var a-sql (yesql "sql/main.sql"))
 
-;; calibre resources
-(var c-db (new sqlite3.Database $CDB-FILEPATH))
-(var c-sql (yesql "sql/calibre.sql"))
-
 (def cleanup ()
      (a-db.close)
-     (c-db.close)
+     (calibre.CalibreManager.Database.close)
      (console.log "cleanup ok"))
 
 (assign window.onunload

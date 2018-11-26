@@ -374,26 +374,23 @@
                                                     (m-result.vm.entry-list m-entry-list)
                                                 
                                                     (acache.load-for-title yml.title)
-                                                
-                                                    (c-db.serialize
-                                                     (#>
-                                                      (c-db.each
-                                                       (c-sql.getEpubPathInfoByTitle (+ "%" (m-result.vm.title) "%"))
-                                                       (lambda (err row)
-                                                               (console.log row)
-                                                               (var epub-filepath
-                                                                    (path.join $CALIBRE-HOME
-                                                                               row.path
-                                                                               (+ row.name ".epub")))
-                                                               (assign epub (load-epub epub-filepath))
-                                                               (epub.on "end" (#> (find-annotations-in-epub
-                                                                                   (m-result.vm.entry-list)
-                                                                                   epub)))
-                                                               (epub.parse)))
-                                                  
-                                                      ;; FIXME cleanup globals
-                                                      (assign yml.highlight-list
-                                                              (m-result.vm.entry-list)))))
+
+                                                    (calibre.CalibreManager.getBookByTitle
+                                                     (#(book)
+                                                       (var epub-filepath (book.getEpubFilePath)
+                                                            epub (load-epub epub-filepath))
+                                                       (epub.on "end"
+                                                                (#>
+                                                                 (find-annotations-in-epub
+                                                                  (m-result.vm.entry-list)
+                                                                  epub)
+                                                                 
+                                                                 ;; FIXME cleanup globals
+                                                                 (assign yml.highlight-list
+                                                                         (m-result.vm.entry-list))
+
+                                                                 ))
+                                                       (epub.parse))))
                                                
                                               (m.endComputation))}
                                    fpath))])))))})
