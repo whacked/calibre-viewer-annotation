@@ -2,17 +2,23 @@ import * as path from "path";
 import * as yesql from "seduce";
 import * as fs from "fs";
 import { exec } from "child_process";
+
 let sqlite3;
 try {
     sqlite3 = require("sqlite3");
-} catch(e) {
+} catch (e) {
     console.error("sqlite3 NOT AVAILABLE");
     console.warn(e);
     // create a dummy object
     class DummyDatabase {
-        each(..._) {
+        error() {
             console.error("sqlite3 not available");
         }
+        serialize(..._) { this.error() }
+        each(..._) { this.error() }
+        run(..._) { this.error() }
+        get(..._) { this.error() }
+        close(..._) {}
     }
     sqlite3 = { Database: DummyDatabase };
 }
@@ -35,7 +41,7 @@ export class CalibreBookData {
     name?: string;
 
     constructor(data) {
-        for(const key of Object.keys(data)) {
+        for (const key of Object.keys(data)) {
             this[key] = data[key];
         }
     }
@@ -45,7 +51,7 @@ export class CalibreBook {
     id?: number;
     title?: string;
     sort?: string;
-    
+
     timestamp?: Timestamp;
     pubdate?: Timestamp;
     series_index?: number;
@@ -54,7 +60,7 @@ export class CalibreBook {
     lccn?: string;
     path?: string;
     flags?: number;
-    
+
     uuid?: string;
     has_cover?: boolean;
     last_modified?: Timestamp;
@@ -66,18 +72,25 @@ export class CalibreBook {
     }
 
     constructor(data) {
-        for(const key of Object.keys(data)) {
+        for (const key of Object.keys(data)) {
             this[key] = data[key];
         }
-        for(const tsKey in [
+        for (const tsKey in [
             "timestamp",
             "pubdate",
             "last_modified",
         ]) {
-            if(this[tsKey]) {
+            if (this[tsKey]) {
                 this[tsKey] = this.parseTimestamp(this[tsKey]);
             }
         }
+    }
+
+    getEpubFilePath(): string {
+        return path.join(
+            $CALIBRE_HOME,
+            this.path,
+            (this.data.name + ".epub"));
     }
 }
 
@@ -92,10 +105,48 @@ export namespace CalibreManager {
     const calibreSql = yesql($CALIBRE_SQL_FILEPATH);
 
     export function loadDatabase(filepath: string = null) {
-        if(filepath) {
+        if (filepath) {
             databaseFilepath = filepath;
         }
         database = new sqlite3.Database(databaseFilepath);
+    }
+
+    export function listAllBooks(callback: Function = null) {
+        if (!database) {
+            loadDatabase();
+        }
+
+        let sqlCount = calibreSql.getTotalEpubBooks();
+        let sqlBooks = calibreSql.getAllEpubBooks();
+        var bookList = [];
+        var expectedCount = 0;
+
+        var runRetrieve = function () {
+            database.each(sqlBooks, (function (err, row) {
+                if (err) {
+                    console.warn(err);
+                    return;
+                }
+                bookList.push(new CalibreBook(row));
+
+                if (bookList.length >= expectedCount) {
+                    if (callback) {
+                        callback(bookList);
+                    }
+                }
+            }));
+        };
+
+        database.serialize(
+            function () {
+                database.get(
+                    sqlCount, function (err, result) {
+                        expectedCount = result.count;
+                        database.serialize(runRetrieve);
+                    }
+                )
+            }
+        );
     }
 
     export function openEpub(epubFilepath) {
@@ -105,22 +156,18 @@ export namespace CalibreManager {
             epubFilepath,
         ].join(" "));
     }
-    
+
     export function openCalibreEpubInReader(calibreBook: CalibreBook) {
-        const epubFilepath = path.join(
-            $CALIBRE_HOME,
-            calibreBook.path,
-            (calibreBook.data.name + ".epub"));
-        openEpub(epubFilepath);
+        openEpub(calibreBook.getEpubFilePath());
     }
-    
+
     export function openEpubByBookId(bookId: number) {
-        if(!database) {
+        if (!database) {
             loadDatabase();
         }
         let sql = calibreSql.getEpubPathInfoById(bookId);
-        database.each(sql, (function(err, row) {
-            if(err) {
+        database.each(sql, (function (err, row) {
+            if (err) {
                 console.warn(err)
                 return;
             }
@@ -130,5 +177,24 @@ export namespace CalibreManager {
             });
             openCalibreEpubInReader(book);
         }));
-    }    
+    }
+
+    export function getBookByTitle(title: string, callback: Function = null) {
+        if (!database) {
+            loadDatabase();
+        }
+        let sql = calibreSql.getEpubPathInfoByTitle(`%${title}%`);
+        database.get(
+            sql,
+            function (err, row) {
+                let calibreBook = new CalibreBook({
+                    path: row.path,
+                    data: { name: row.name },
+                });
+                if (callback) {
+                    callback(calibreBook);
+                }
+            }
+        )
+    }
 }
