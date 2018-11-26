@@ -147,7 +147,7 @@
        ;;             html-el (get (doc.getElementsByTagName "html") 0))
        ;;        (html-el.appendChild cfi-script)))
        
-       (var search-string (clean-string entry.highlight))
+       (var search-string (clean-string entry.quote))
        (if (ifr-window.find search-string)
            null ;; direct match
 
@@ -207,7 +207,7 @@
        (var sel (ifr-window.getSelection)
             verif-string (sel.toString)
             verif-token-list (verif-string.split re-whitespace)
-            coverage-hit-count (get-corpus-coverage entry.highlight verif-token-list)
+            coverage-hit-count (get-corpus-coverage entry.quote verif-token-list)
             coverage-score (/ coverage-hit-count verif-token-list.length)
 
             cur-scroll-x window.scrollX
@@ -288,10 +288,10 @@
                             
                             }
                   })
-       (when entry.note
-             (assign ann.note entry.note))
+       (when entry.text
+             (assign ann.note entry.text))
 
-       (set output entry.highlight ann)
+       (set output entry.quote ann)
        
        (entry.verification {content: verif-string
                              score: coverage-score
