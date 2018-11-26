@@ -44,11 +44,13 @@ class WebAnnotationDataModel {
     target: Relationship;
 }
 
+type Timestamp = string;
+
 // https://github.com/openannotation/annotator
 class OkfnAnnotation1Def {
-    id?: any;
-    uri?: any;
-    title?: any;
+    id?: number;
+    uri?: string;
+    title?: string;
 
     text?: string;
     noteText?: string; // kindle
@@ -56,12 +58,12 @@ class OkfnAnnotation1Def {
     quote?: string;
     highlightText?: string; // kindle
 
-    user?: any;
+    user?: string;
 
     extras?: any; // (JSON.parse data.extras)
     ranges?: any;
-    created?: any;
-    updated?: any;
+    created?: Timestamp;
+    updated?: Timestamp;
 
     // https://www.w3.org/TR/annotation-model/
     body?: {

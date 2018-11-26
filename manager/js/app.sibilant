@@ -85,21 +85,20 @@
          {controller: m-ann.controller view: m-ann.view})
 
 (def refresh-annotation-list ()
-     (var book (m-ann.vm.book))
+     (var book (m-ann.vm.book)
+          ann-list [])
      (when book
-           (a-db.serialize
+           (m.startComputation)
+           (annotation.AnnotationManager.loadMatchingAnnotations
+            {title: book.title}
+            (#(ann)
+              (ann-list.push ann))
             (#>
-             (m.startComputation)
-             (var ann-list [])
-             (a-db.each (a-sql.getAnnotationsWithTitleLike {title: (+ "%" book.title "%")})
-                        (lambda (err row)
-                                ;; (console.log row.id)
-                                (ann-list.push (new OkfnAnnotation1 row)))
-                        (#>
-                         (console.log ann-list.length)
-                         (m-ann.vm.list ann-list)
-                         ;; trigger rerender
-                         (m.endComputation)))))))
+             (console.log ann-list.length)
+             (m-ann.vm.list ann-list)
+             ;; trigger rerender
+             (m.endComputation)))
+           (m.endComputation)))
 
 ;; book interaction
 (var mBook {view: (lambda (ctrl book)
@@ -417,50 +416,19 @@
                                                                                       extras: verf.annotation.extras
                                                                                       uri: verf.annotation.uri
                                                                                       user: $USERNAME})
-                                                                 (a-db.serialize
-                                                                  (#>
-                                                                   ;; BAD!
-                                                                   ;; (a-db.run (a-sql.insertAnnotation new-annotation))
-                                                                   ;; the quote escaping is incredibly nasty >:-(
-                                                                   ;; manually convert it to a parameterized query
-                                                                   (a-db.run
-                                                                    (|> (a-sql.insertAnnotation)
-                                                                        (replace-all "null" "?"))
-                                                                    [ new-annotation.created
-                                                                     new-annotation.updated
-                                                                     new-annotation.title
-                                                                     new-annotation.text
-                                                                     new-annotation.quote
-                                                                     (JSON.stringify new-annotation.extras)
-                                                                     new-annotation.uri
-                                                                     new-annotation.user])
-                                                                   (a-db.serialize
-                                                                    (#>
-                                                                     (a-db.get (a-sql.getLastInsertedId)
-                                                                               (#(err row)
-                                                                                 (console.log "INSERTED:" row.id)
-                                                                                 (assign new-annotation.id row.id)
-                                                                                 ;; append range object
-                                                                                 (var rng (get verf.annotation.ranges 0)
-                                                                                      sql (a-sql.appendRangeToAnnotation
-                                                                                           { :start       rng.start
-                                                                                            :end         rng.end
-                                                                                            :startOffset rng.startOffset
-                                                                                            :endOffset   rng.endOffset
-                                                                                            :annotation_id new-annotation.id}))
-                                                                                 (console.log sql)
-                                                                                 (a-db.run sql
-                                                                                           (#(err row)
-                                                                                             (entry.db-entry new-annotation)
-                                                                                             (m.endComputation)
-                                                                                             (console.log "OK!!!!")))
-                                                                                 ))))))
-                                                                  
-                                                                  
-                                                                 ;; (entry.db-entry )
-                                                                 )}
-                                                      "add to db")
 
+                                                                 (annotation.AnnotationManager.addAnnotation
+                                                                  new-annotation
+                                                                  (#(ann)
+                                                                    (console.log "INSERTED:" ann.id)
+                                                                    ;; append range object
+                                                                    (var rng (get verf.annotation.ranges 0))
+                                                                    (annotation.AnnotationManager.addRangeToAnnotation
+                                                                     ann rng (#(row)
+                                                                               (entry.db-entry ann)
+                                                                               (m.endComputation)
+                                                                               (console.log "OK!!!!"))))))}
+                                                      "add to db")
                                                    true
                                                    "")))
 

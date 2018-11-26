@@ -1,39 +1,20 @@
 (include "./macro")
 
 ;; imports
-(var fs        (require "fs")
-     path      (require "path")
-     sqlite3   (require "sqlite3") ;; https://github.com/mapbox/node-sqlite3
-     yesql     (require "seduce") ;; https://github.com/bcarrell/seduce
-     m         (require "mithril")
-     clipboard (require "clipboard")
-     exec      (get (require "child_process") "exec")
-     dialog    (|> (require "remote")
-                   ;(.require "dialog"))
-     username  (require "username"))
+(const fs        (require "fs")
+       path      (require "path")
+       m         (require "mithril")
+       clipboard (require "clipboard")
+       exec      (get (require "child_process") "exec")
+       username  (require "username"))
 
 (const calibre (require "./js/calibre"))
+(const annotation (require "./js/annotation"))
 
-(var $ADB-FILENAME "ebook-viewer-annotation.db"
-     $HOME (get process.env (ternary (= process.platform "win32")
-                                     "USERPROFILE"
-                                     "HOME"))
-     $CALIBRE-HOME (path.join $HOME "Calibre Library")
-     $ADB-FILEPATH (path.join $HOME $ADB-FILENAME)
-     $CDB-FILEPATH (path.join $CALIBRE-HOME "metadata.db")
-     $USERNAME null)
-
-;; TODO: handle not exists. rest is pointless if not exist!
-(try
- (fs.statSync $ADB-FILEPATH)
- (fs.statSync $CDB-FILEPATH))
-
-;; annotation resources
-(var a-db (new sqlite3.Database $ADB-FILEPATH))
-(var a-sql (yesql "sql/main.sql"))
+(var $USERNAME null)
 
 (def cleanup ()
-     (a-db.close)
+     (annotation.AnnotationManager.Database.close)
      (calibre.CalibreManager.Database.close)
      (console.log "cleanup ok"))
 

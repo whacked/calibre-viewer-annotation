@@ -27,7 +27,11 @@ const $ANNOTATION_SQL_FILEPATH = path.join(
     "main.sql",
 );
 
-import { OkfnAnnotation1 } from "./model";
+const $HOME = process.env[(process.platform === "win32") ? "USERPROFILE" : "HOME"];
+const $ADB_FILENAME = "ebook-viewer-annotation.db"
+const $ADB_FILEPATH = path.join($HOME, $ADB_FILENAME);
+
+import { OkfnAnnotation1, IOkfnAnnotation1 } from "./model";
 
 type QueryParameter = {
     title?: string,
@@ -41,7 +45,7 @@ type QueryParameter = {
  * AnnotationManager
  */
 export namespace AnnotationManager {
-    var databaseFilepath: string;
+    var databaseFilepath: string = $ADB_FILEPATH;
     export var Database;
     const annotationSql = yesql($ANNOTATION_SQL_FILEPATH);
 

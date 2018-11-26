@@ -4,11 +4,13 @@
                                (when (not (get acache.data title))
                                      (var collection [])
                                      (set acache.data title collection)
-                                     (a-db.serialize
-                                      (#>
-                                       (a-db.each (a-sql.getFullAnnotationsWithTitleLike title)
-                                                  (#(err row)
-                                                    (collection.push row)))))))
+                                     ;; NOTE: this used to retrieve FullAnnotations
+                                     ;; (a-sql.getFullAnnotationsWithTitleLike title)
+                                     (annotation.AnnotationManager.loadMatchingAnnotations
+                                      {title: title}
+                                      (#(ann)
+                                        (collection.push)))))
+             
              find-match: (#(title rng-match)
                            (var result null
                                 search-list (get acache.data title)
@@ -411,5 +413,3 @@
                (filtered-list.push fpath)))
    (m-file.vm.file-list filtered-list)
    (m.endComputation)))
-
-
