@@ -23,11 +23,6 @@ SELECT *
 FROM annotation
 WHERE note LIKE :note;
 
--- name: getAnnotationsWithTitleLike
-SELECT *
-FROM annotation
-WHERE title LIKE :title;
-
 -- name: getRangesForAnnotation
 SELECT * FROM
 annotation AS ann,
