@@ -18,13 +18,36 @@ try {
         each(..._) { this.error() }
         run(..._) { this.error() }
         get(..._) { this.error() }
-        close(..._) {}
+        close(..._) { }
     }
     sqlite3 = { Database: DummyDatabase };
 }
 
 const $HOME = process.env[(process.platform === "win32") ? "USERPROFILE" : "HOME"];
-const $CALIBRE_HOME = path.join($HOME, "Calibre Library");
+const $DEFAULT_LIBRARY_PATH = path.join($HOME, "Calibre Library");
+
+function findCalibreLibraryFilepath() {
+    var calibreGlobalPyFilepath = path.join(process.env.APPDATA, "calibre", "global.py");
+    if (fs.existsSync(calibreGlobalPyFilepath)) {
+        var maybeLibraryLine = fs.readFileSync(
+            calibreGlobalPyFilepath, "utf-8"
+        ).split("\n").filter(
+            (line) => -1 < line.indexOf("library_path")
+        )[0];
+        if(maybeLibraryLine) {
+            return maybeLibraryLine.split(
+                /\s*=\s*/
+            ).slice(-1)[0].replace(
+                /^u?['"]/, ""
+            ).replace(
+                /['"]$/, ""
+            );
+        }
+    }
+    return $DEFAULT_LIBRARY_PATH;
+}
+
+const $CALIBRE_HOME = findCalibreLibraryFilepath();
 const $CDB_FILEPATH = path.join($CALIBRE_HOME, "metadata.db");
 const $CALIBRE_SQL_FILEPATH = path.join(
     __dirname, "../../sql",
@@ -180,4 +203,27 @@ export namespace CalibreManager {
             }
         )
     }
+}
+
+if (process.argv0 == "node.exe") {
+    const EPub = require("epub");
+    CalibreManager.loadDatabase("../../calibre.db")
+
+    CalibreManager.getBookByTitle("Clojure", function (book) {
+        console.log("======== loaded book:")
+        console.log(book)
+        let epubFilepath = book.getEpubFilePath();
+        epubFilepath = "../../books/blackswan.epub"
+        fs.statSync(epubFilepath);
+        new EPub(
+            epubFilepath,
+            "imagewebroot_ignore",
+            "chapterwebroot_ignore"
+        ).on("end", function () {
+            console.log("EPUB DONE FOR", book);
+        }).parse();
+    })
+    CalibreManager.loadAllBooks(function (books) {
+        console.log("DONE,", books.length)
+    });
 }
