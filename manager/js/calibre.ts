@@ -151,7 +151,9 @@ export namespace CalibreManager {
                 }
                 bookList.push(new CalibreBook(row));
             },
-            onComplete,
+            function() {
+                onComplete(bookList);
+            },
         );
     }
 
