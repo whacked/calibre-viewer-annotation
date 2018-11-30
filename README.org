@@ -76,18 +76,32 @@
 
 **** example build procedure sqlite3 for electron on recent ubuntu using electron =v0.37.7=
 
-     #+BEGIN_SRC sh :eval never
-     cd node_modules/sqlite3
-     npm run prepublish
-     node-gyp configure --module_name=node_sqlite3 --module_path=lib/binding/node-v47-linux-x64
-     node-gyp rebuild --target=0.37.7 --arch=x64 --target_platform=linux --dist-url=https://atom.io/download/atom-shell --module_name=node_sqlite3 --module_path=lib/binding/node-v47-linux-x64
-     mkdir lib/binding/electron-v0.37-linux-x64
-     mv build/Release/node_sqlite3.node lib/binding/electron-v0.37-linux-x64
-     #+END_SRC
+***** linux
 
+      #+BEGIN_SRC sh :eval never
+        cd node_modules/sqlite3
+        npm run prepublish
+        node-gyp configure --module_name=node_sqlite3 --module_path=lib/binding/node-v47-linux-x64
+        node-gyp rebuild \
+                 --target=0.37.7 \
+                 --arch=x64 \
+                 --target_platform=linux \
+                 --dist-url=https://atom.io/download/atom-shell \
+                 --module_name=node_sqlite3 \
+                 --module_path=lib/binding/node-v47-linux-x64
+        mkdir lib/binding/electron-v0.37-linux-x64
+        mv build/Release/node_sqlite3.node lib/binding/electron-v0.37-linux-x64
+      #+END_SRC
+
+***** windows
+
+      #+BEGIN_SRC sh :eval never
+      yarn run electron-builder install-app-deps
+      #+END_SRC
+      
 ** USAGE
    
-   start the application with =electron .= from the current project directory (where =package.json= is).
+   start the application with =yarn run electron .= from the current project directory (where =package.json= is).
 
 *** viewer panel
 
