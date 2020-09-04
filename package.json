@@ -6,7 +6,7 @@
     "clipboard": "^2.0.4",
     "epub": "^1.1.0",
     "html-entities": "^1.2.0",
-    "mithril": "^0.2.4",
+    "mithril": "^2.0.4",
     "seduce": "0.0.4",
     "simple-xpath-position": "^2.0.2",
     "source-map-support": "^0.5.9",
