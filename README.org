@@ -1,5 +1,11 @@
 #+ARCHIVE: doc/devlog/%s_archive::
 
+* ARCHIVED
+
+  [[https://calibre-ebook.com/new-in/fourteen][calibre 5.0]] has been released, with native support for annotations directly in the ebook viewer program. If you have a need for annotation features, please upgrade to Calibre 5.0 and support its development.
+
+  Transfering existing annotations will require creating a bridge between the existing and data models. If you have such a need, open an issue on the [[https://github.com/whacked/xcl/][xcl]] repository.
+  
 * adding annotation (read and write) capability to calibre's ebook-viewer
   
   sporadic work in progress. last updated on 2016-02-10 *(BREAKS
